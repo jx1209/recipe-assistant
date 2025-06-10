@@ -1,0 +1,2 @@
+# No external dependencies for basic version
+# We'll add more as we expand features
