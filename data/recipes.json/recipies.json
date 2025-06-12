@@ -1,0 +1,18 @@
+{
+  "pasta_marinara": {
+    "name": "Pasta Marinara",
+    "ingredients": ["pasta", "tomatoes", "garlic", "olive oil", "basil"],
+    "instructions": [
+      "Boil water and cook pasta according to package directions",
+      "Heat olive oil in pan, add minced garlic",
+      "Add crushed tomatoes and simmer 10 minutes", 
+      "Add cooked pasta and fresh basil",
+      "Serve hot"
+    ],
+    "cook_time": "20 minutes",
+    "difficulty": "Easy",
+    "servings": 4,
+    "cuisine": "Italian",
+    "tags": ["vegetarian", "quick", "dinner"]
+  }
+}
