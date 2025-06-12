@@ -318,5 +318,58 @@ class RecipeAssistant:
                 except ValueError:
                     print("Please enter a valid number.")
 
-    def display_search_results(self, matches):
+        """Display search results and handle user interaction"""
+        # Filter out recipes with very low match
+        valid_matches = [match for match in matches if match["match_percentage"] >= 10]
         
+        if not valid_matches:
+            print("No matching recipes found.")
+            print("Try different ingredients or check spelling.\n")
+            return
+        
+        # Display recipe summaries
+        print(f"Found {len(valid_matches)} matching recipes:\n")
+        
+        display_count = min(5, len(valid_matches))
+        for i in range(display_count):
+            self.display_recipe_summary(valid_matches[i], i + 1)
+        
+        if len(valid_matches) > display_count:
+            print(f"... and {len(valid_matches) - display_count} more recipes")
+            show_more = get_yes_no_input("Show all recipes?")
+            if show_more:
+                for i in range(display_count, len(valid_matches)):
+                    self.display_recipe_summary(valid_matches[i], i + 1)
+                display_count = len(valid_matches)
+        
+        # Get user choice for detailed view
+        while True:
+            choice = input(f"\nView recipe details (1-{display_count}) or 'back' for new search: ").strip().lower()
+            
+            if choice == 'back':
+                break
+            elif choice == 'quit':
+                return
+            
+            try:
+                recipe_num = int(choice) - 1
+                if 0 <= recipe_num < len(valid_matches):
+                    self.display_full_recipe(valid_matches[recipe_num])
+                    
+                    # Ask if they want to see another recipe
+                    if not get_yes_no_input("View another recipe?"):
+                        break
+                else:
+                    print(f"Please enter a number between 1 and {display_count}")
+            
+            except ValueError:
+                print("Please enter a valid number or 'back'")
+
+def main():
+    """Main entry point for the Recipe Assistant application"""
+    assistant = RecipeAssistant()
+    assistant.run()
+
+if __name__ == "__main__":
+    main()
+# This allows the script to be run directly or imported as a module

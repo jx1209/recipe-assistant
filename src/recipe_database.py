@@ -24,22 +24,24 @@ class RecipeDatabase:
                 with open(self.data_file, 'r', encoding='utf-8') as file:
                     return json.load(file)
             else:
-                return self.get_default_recipes()
-        except (json.JSONDecodeError, FileNotFoundError) as e:
-            print(f"Warning: Could not load recipes from {self.data_file}: {e}")
-            return self.get_default_recipes()
-    
-    def save_recipes(self):
-        """Save current recipes to JSON file"""
-        try:
-            os.makedirs(os.path.dirname(self.data_file), exist_ok=True)
+                print(f"Creating data file at {self.data_file}")
+                default_recipes = self.get_default_recipes()
+
+            try:
+                os.makedirs(os.path.dirname(self.data_file), exist_ok=True)
             
-            with open(self.data_file, 'w', encoding='utf-8') as file:
-                json.dump(self.recipes, file, indent=2, ensure_ascii=False)
-            return True
-        except Exception as e:
-            print(f"Error saving recipes: {e}")
-            return False
+                with open(self.data_file, 'w', encoding='utf-8') as file:
+                    json.dump(self.recipes, file, indent=2, ensure_ascii=False)
+                return default_recipes
+            
+            except PermissionError:
+                print("Warning: Cannot create data file due to permissions. Using in-memory recipes.")
+                return default_recipes
+        
+        except (json.JSONDecodeError, FileNotFoundError, PermissionError) as e:
+            print(f"Warning: Could not load recipes from {self.data_file}: {e}")
+            print("Using default recipes in memory.")
+            return self.get_default_recipes()
     
     def get_default_recipes(self):
         """Return the default recipe database"""
