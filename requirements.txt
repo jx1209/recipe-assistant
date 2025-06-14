@@ -1,2 +1,7 @@
-# No external dependencies for basic version
-# We'll add more as we expand features
+# current features will be removed in future releases
+flask==2.3.3
+flask-sqlalchemy==3.0.5
+werkzeug==2.3.7
+pillow==10.0.1
+requests==2.31.0
+python-dotenv==1.0.0
