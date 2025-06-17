@@ -5,17 +5,204 @@ Handles all recipe data and database operations
 
 import json
 import os
+import sqlite3
+import logging
+import hashlib
+import time
+from datetime import datetime, timedelta
+from typing import Dict, List, Optional, Tuple, Any, Union
+from dataclasses import dataclass, asdict
+from pathlib import Path
+import threading
+from contextlib import contextmanager
+import shutil
+import uuid
 
-class RecipeDatabase:
-    def __init__(self, data_file=None):
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+@dataclass
+class Recipe:
+    """Recipe data model with type hints and validation"""
+    name: str
+    ingredients: List[str]
+    instructions: List[str]
+    cook_time: str
+    difficulty: str
+    servings: int
+    cuisine: str = ""
+    tags: List[str] = None
+    nutrition: Dict[str, Any] = None
+    image: str = ""
+    created_at: str = ""
+    updated_at: str = ""
+    created_by: str = "system"
+    rating: float = 0.0
+    review_count: int = 0
+    prep_time: str = ""
+    total_time: str = ""
+    description: str = ""
+    source: str = ""
+    dietary_restrictions: List[str] = None
+    equipment: List[str] = None
+    cost_estimate: str = ""
+    
+    def __post_init__(self):
+        """Initialize default values and validate data"""
+        if self.tags is None:
+            self.tags = []
+        if self.nutrition is None:
+            self.nutrition = {}
+        if self.dietary_restrictions is None:
+            self.dietary_restrictions = []
+        if self.equipment is None:
+            self.equipment = []
+        if not self.created_at:
+            self.created_at = datetime.now().isoformat()
+        if not self.updated_at:
+            self.updated_at = self.created_at
+        
+        # Validate required fields
+        self._validate()
+    
+    def _validate(self):
+        """Validate recipe data"""
+        errors = []
+        
+        if not self.name or len(self.name.strip()) < 2:
+            errors.append("Recipe name must be at least 2 characters")
+        
+        if not self.ingredients or len(self.ingredients) == 0:
+            errors.append("Recipe must have at least one ingredient")
+        
+        if not self.instructions or len(self.instructions) == 0:
+            errors.append("Recipe must have at least one instruction")
+        
+        if self.servings <= 0:
+            errors.append("Servings must be greater than 0")
+        
+        valid_difficulties = ['Easy', 'Medium', 'Hard']
+        if self.difficulty not in valid_difficulties:
+            errors.append(f"Difficulty must be one of: {', '.join(valid_difficulties)}")
+        
+        if self.rating < 0 or self.rating > 5:
+            errors.append("Rating must be between 0 and 5")
+        
+        if errors:
+            raise ValueError(f"Recipe validation failed: {'; '.join(errors)}")
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert recipe to dictionary"""
+        return asdict(self)
+    
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'Recipe':
+        """Create recipe from dictionary"""
+        return cls(**data)
+    
+    def update_timestamp(self):
+        """Update the updated_at timestamp"""
+        self.updated_at = datetime.now().isoformat()
+
+class DatabaseCache:
+    """Simple in-memory cache for frequently accessed data"""
+    
+    def __init__(self, max_size: int = 1000, ttl_seconds: int = 3600):
+        self.max_size = max_size
+        self.ttl_seconds = ttl_seconds
+        self._cache = {}
+        self._timestamps = {}
+        self._lock = threading.RLock()
+    
+    def get(self, key: str) -> Optional[Any]:
+        """Get item from cache"""
+        with self._lock:
+            if key not in self._cache:
+                return None
+            
+            # Check if expired
+            if time.time() - self._timestamps[key] > self.ttl_seconds:
+                del self._cache[key]
+                del self._timestamps[key]
+                return None
+            
+            return self._cache[key]
+    
+    def set(self, key: str, value: Any):
+        """Set item in cache"""
+        with self._lock:
+            # Remove oldest items if cache is full
+            if len(self._cache) >= self.max_size:
+                oldest_key = min(self._timestamps.keys(), key=lambda k: self._timestamps[k])
+                del self._cache[oldest_key]
+                del self._timestamps[oldest_key]
+            
+            self._cache[key] = value
+            self._timestamps[key] = time.time()
+    
+    def clear(self):
+        """Clear all cache"""
+        with self._lock:
+            self._cache.clear()
+            self._timestamps.clear()
+    
+    def invalidate(self, pattern: str = None):
+        """Invalidate cache entries matching pattern"""
+        with self._lock:
+            if pattern is None:
+                self.clear()
+                return
+            
+            keys_to_remove = [k for k in self._cache.keys() if pattern in k]
+            for key in keys_to_remove:
+                del self._cache[key]
+                del self._timestamps[key]
+
+ ########################Note: update to adv recipe database
+class AdvancedRecipeDatabase:
+    def __init__(self, 
+                 data_file: Optional[str] = None,
+                 db_file: Optional[str] = None,
+                 enable_cache: bool = True,
+                 backup_enabled: bool = True):
+
         """Initialize the recipe database"""
         if data_file is None:
-            current_dir = os.path.dirname(os.path.abspath(__file__))
-            project_root = os.path.dirname(current_dir)
-            data_file = os.path.join(project_root, 'data', 'recipes.json')
+            current_dir = Path(__file__).parent
+            project_root = current_dir.parent
+            data_dir = project_root / 'data'
+            data_dir.mkdir(exist_ok=True)
+            data_file = str(data_dir / 'recipes.json')
+        
+        if db_file is None:
+            db_file = str(Path(data_file).parent / 'recipes.db')
         
         self.data_file = data_file
-        self.recipes = self.load_recipes()
+        self.db_file = db_file
+        self.backup_enabled = backup_enabled
+        
+        # Initialize cache
+        self.cache = DatabaseCache() if enable_cache else None
+        
+        # Database lock for thread safety
+        self._db_lock = threading.RLock()
+        
+        # Initialize databases
+        self._init_sqlite_db()
+        self._load_or_migrate_data()
+        
+        # Performance metrics
+        self.query_count = 0
+        self.cache_hits = 0
+        self.cache_misses = 0
+        
+        logger.info(f"Advanced Recipe Database initialized")
+        logger.info(f"JSON file: {self.data_file}")
+        logger.info(f"SQLite file: {self.db_file}")
+###############################################
+        #self.data_file = data_file
+        #self.recipes = self.load_recipes()
     
     def load_recipes(self):
         """Load recipes from JSON file or return default recipes"""
