@@ -347,3 +347,398 @@ class SmartIngredientMatcher:
             'total_similarity': total_similarity_score
         }
     
+    def _calculate_confidence_score(self, match_result: Dict, source: str, api: str = None) -> float:
+        """Calculate confidence score for the match"""
+        base_score = match_result['match_percentage'] / 100
+        
+        # Bonus for local recipes (more trusted)
+        if source == "local":
+            base_score += 0.1
+        
+        # API-specific bonuses
+        api_bonuses = {
+            "spoonacular": 0.05,  # Generally high quality
+            "edamam": 0.03,       # Good nutrition data
+            "themealdb": 0.02     # Free but less detailed
+        }
+        
+        if api in api_bonuses:
+            base_score += api_bonuses[api]
+        
+        # Bonus for fewer missing ingredients
+        missing_count = len(match_result['missing_ingredients'])
+        if missing_count == 0:
+            base_score += 0.2
+        elif missing_count <= 2:
+            base_score += 0.1
+        
+        return min(base_score, 1.0)
+    
+    def _generate_ingredient_suggestions(self, 
+                                       user_ingredients: List[str], 
+                                       matches: List[IngredientMatch]) -> List[str]:
+        """Generate suggestions for additional ingredients"""
+        suggestions = []
+        missing_ingredient_counts = {}
+        
+        # Count frequently missing ingredients across matches
+        for match in matches:
+            for missing_ing in match.missing_ingredients:
+                cleaned_missing = self._clean_ingredient(missing_ing)
+                missing_ingredient_counts[cleaned_missing] = missing_ingredient_counts.get(cleaned_missing, 0) + 1
+        
+        # Sort by frequency and suggest top missing ingredients
+        sorted_missing = sorted(missing_ingredient_counts.items(), key=lambda x: x[1], reverse=True)
+        
+        for ingredient, count in sorted_missing[:5]:
+            if count >= 2:  # Suggest if missing in at least 2 recipes
+                suggestions.append(f"Consider adding '{ingredient}' - needed in {count} recipes")
+        
+        # Suggest complementary ingredients based on categories
+        analysis = self.analyze_ingredients(user_ingredients)
+        for missing_category in analysis['missing_categories']:
+            category_items = self.ingredient_categories[missing_category]
+            suggestions.append(f"Add a {missing_category}: try {', '.join(category_items[:3])}")
+        
+        return suggestions[:3]  # Limit to top 3 suggestions
+    
+    def save_favorite_recipe(self, match: IngredientMatch) -> bool:
+        """Save an online recipe to local database"""
+        if match.source.startswith("online"):
+            try:
+                recipe_id = self.database.save_online_recipe(match.recipe_data)
+                if recipe_id:
+                    logger.info(f"Saved favorite recipe: {recipe_id}")
+                    return True
+            except Exception as e:
+                logger.error(f"Failed to save recipe: {e}")
+        return False
+    
+    def get_recipe_suggestions_interactive(self) -> RecipeSuggestion:
+        """Interactive ingredient input and recipe suggestion"""
+        print_header("Smart Recipe Finder")
+        print("Enter your available ingredients to find matching recipes!")
+        print("I'll search both local recipes and online sources for the best matches.\n")
+        
+        # Get ingredients from user
+        ingredients = self._get_ingredients_interactive()
+        
+        if not ingredients:
+            print("No ingredients provided. Please try again.")
+            return RecipeSuggestion([], 0, 0.0, [], [])
+        
+        print(f"\nAnalyzing your ingredients: {', '.join(ingredients)}")
+        
+        # Analyze ingredients
+        analysis = self.analyze_ingredients(ingredients)
+        self._display_ingredient_analysis(analysis)
+        
+        # Ask about online search
+        include_online = get_yes_no_input("\nWould you like to search online recipe sources?")
+        
+        print("\nSearching for matching recipes...")
+        
+        # Find matches
+        suggestion = self.find_matching_recipes(
+            ingredients, 
+            include_online=include_online,
+            max_results=10
+        )
+        
+        # Display results
+        self._display_recipe_suggestions(suggestion)
+        
+        return suggestion
+    
+    def _get_ingredients_interactive(self) -> List[str]:
+        """Get ingredients from user with helpful prompts"""
+        print("Enter your ingredients separated by commas.")
+        print("Example: chicken breast, rice, onions, garlic, soy sauce")
+        print("Or type 'help' for more guidance\n")
+        
+        while True:
+            user_input = input("Your ingredients: ").strip()
+            
+            if user_input.lower() == 'help':
+                self._show_ingredient_help()
+                continue
+            elif not user_input:
+                print("Please enter at least one ingredient.")
+                continue
+            
+            ingredients = parse_ingredient_list(user_input)
+            
+            if ingredients:
+                # Ask for confirmation
+                print(f"\nI found these ingredients: {', '.join(ingredients)}")
+                if get_yes_no_input("Is this correct?"):
+                    return ingredients
+                else:
+                    print("Please enter your ingredients again:")
+            else:
+                print("Please enter valid ingredients separated by commas.")
+    
+    def _show_ingredient_help(self):
+        """Show helpful guidance for ingredient input"""
+        print("\nIngredient Input Guide:")
+        print("- Use simple names: 'chicken' instead of '2 lbs chicken breast'")
+        print("- Separate with commas: 'tomatoes, onions, garlic'")
+        print("- Don't worry about exact quantities")
+        print("- Include seasonings and sauces you have")
+        print("\nExample categories to consider:")
+        for category, items in list(self.ingredient_categories.items())[:4]:
+            print(f"- {category.title()}: {', '.join(items[:4])}")
+        print()
+    
+    def _display_ingredient_analysis(self, analysis: Dict):
+        """Display ingredient analysis to user"""
+        print("\n" + "="*50)
+        print("INGREDIENT ANALYSIS")
+        print("="*50)
+        
+        if analysis['categories']:
+            print("Your ingredients by category:")
+            for category, items in analysis['categories'].items():
+                print(f"  {category.title()}: {', '.join(items)}")
+        
+        if analysis['missing_categories']:
+            print(f"\nMissing categories: {', '.join(analysis['missing_categories'])}")
+            print("Consider adding items from these categories for more recipe options.")
+        
+        if analysis['substitution_suggestions']:
+            print("\nPossible substitutions:")
+            for ingredient, subs in list(analysis['substitution_suggestions'].items())[:3]:
+                print(f"  {ingredient} → {', '.join(subs[:2])}")
+        
+        print("="*50)
+    
+    def _display_recipe_suggestions(self, suggestion: RecipeSuggestion):
+        """Display recipe suggestions to user"""
+        print_separator()
+        print(f"RECIPE SUGGESTIONS ({suggestion.total_found} found in {suggestion.search_time:.2f}s)")
+        print_separator()
+        
+        if not suggestion.matches:
+            print("No matching recipes found.")
+            print("Try adding more common ingredients or check your spelling.")
+            return
+        
+        # Group by match quality
+        excellent_matches = [m for m in suggestion.matches if m.match_percentage >= 80]
+        good_matches = [m for m in suggestion.matches if 60 <= m.match_percentage < 80]
+        okay_matches = [m for m in suggestion.matches if m.match_percentage < 60]
+        
+        # Display excellent matches
+        if excellent_matches:
+            print("🌟 EXCELLENT MATCHES (80%+ ingredients):")
+            for i, match in enumerate(excellent_matches[:3], 1):
+                self._display_match_summary(match, i)
+        
+        # Display good matches
+        if good_matches:
+            print("\n✅ GOOD MATCHES (60-79% ingredients):")
+            for i, match in enumerate(good_matches[:3], len(excellent_matches) + 1):
+                self._display_match_summary(match, i)
+        
+        # Display okay matches
+        if okay_matches and len(excellent_matches + good_matches) < 3:
+            print("\n📝 POSSIBLE MATCHES (under 60% ingredients):")
+            for i, match in enumerate(okay_matches[:2], len(excellent_matches + good_matches) + 1):
+                self._display_match_summary(match, i)
+        
+        # Show suggestions
+        if suggestion.suggestions:
+            print("\n💡 SUGGESTIONS TO IMPROVE MATCHES:")
+            for suggestion_text in suggestion.suggestions:
+                print(f"  • {suggestion_text}")
+        
+        # Show online sources used
+        if suggestion.used_online_apis:
+            print(f"\n🌐 Searched online sources: {', '.join(suggestion.used_online_apis)}")
+        
+        print_separator()
+    
+    def _display_match_summary(self, match: IngredientMatch, index: int):
+        """Display a single recipe match summary with enhanced formatting"""
+        recipe_data = match.recipe_data
+        
+        # Header with recipe name and match percentage
+        match_emoji = "🌟" if match.match_percentage >= 80 else "✅" if match.match_percentage >= 60 else "📝"
+        print(f"\n{match_emoji} {index}. {match.recipe_name}")
+        
+        # Match percentage with confidence indicator
+        confidence_indicator = "🔥" if match.confidence_score > 0.8 else "👍" if match.confidence_score > 0.6 else ""
+        print(f"   📊 Match: {match.match_percentage:.0f}% {confidence_indicator}")
+        
+        # Basic recipe info in a clean row
+        info_parts = []
+        
+        # Cook time
+        cook_time = recipe_data.get('cook_time', 'Unknown')
+        info_parts.append(f"⏱️ {cook_time}")
+        
+        # Difficulty with color coding
+        difficulty = recipe_data.get('difficulty', 'Unknown')
+        difficulty_emoji = {"Easy": "🟢", "Medium": "🟡", "Hard": "🔴"}.get(difficulty, "⚪")
+        info_parts.append(f"{difficulty_emoji} {difficulty}")
+        
+        # Servings
+        servings = recipe_data.get('servings', 'Unknown')
+        if servings != 'Unknown':
+            info_parts.append(f"👥 {servings} servings")
+        
+        # Source with appropriate icon
+        source_icon = "🏠" if match.source == "local" else "🌐"
+        source_display = match.source.replace("online_", "").title() if match.source.startswith("online_") else "Local"
+        info_parts.append(f"{source_icon} {source_display}")
+        
+        print(f"   {' | '.join(info_parts)}")
+        
+        # Additional info row (cuisine, rating, etc.)
+        extra_info = []
+        
+        cuisine = recipe_data.get('cuisine', '')
+        if cuisine and cuisine.strip():
+            extra_info.append(f"🍽️ {cuisine}")
+        
+        rating = recipe_data.get('rating', 0)
+        if rating and rating > 0:
+            stars = "⭐" * min(int(rating), 5)
+            extra_info.append(f"{stars} ({rating:.1f})")
+        
+        tags = recipe_data.get('tags', [])
+        if tags and len(tags) > 0:
+            # Show first 2 tags
+            tag_display = ', '.join(tags[:2])
+            if len(tags) > 2:
+                tag_display += f" (+{len(tags)-2} more)"
+            extra_info.append(f"🏷️ {tag_display}")
+        
+        if extra_info:
+            print(f"   {' | '.join(extra_info)}")
+        
+        # Ingredients status
+        total_ingredients = len(recipe_data.get('ingredients', []))
+        matching_count = len(match.matching_ingredients)
+        missing_count = len(match.missing_ingredients)
+        
+        print(f"   🥘 Ingredients: {matching_count}/{total_ingredients} available")
+        
+        # Show matching ingredients (if not too many)
+        if matching_count > 0 and matching_count <= 5:
+            matching_display = ', '.join(match.matching_ingredients[:5])
+            print(f"   ✅ Have: {matching_display}")
+        elif matching_count > 5:
+            matching_display = ', '.join(match.matching_ingredients[:3])
+            print(f"   ✅ Have: {matching_display} (+{matching_count-3} more)")
+        
+        # Show missing ingredients
+        if missing_count > 0:
+            if missing_count <= 4:
+                missing_display = ', '.join(match.missing_ingredients)
+                print(f"   🛒 Need: {missing_display}")
+            else:
+                missing_display = ', '.join(match.missing_ingredients[:3])
+                print(f"   🛒 Need: {missing_display} (+{missing_count-3} more)")
+        
+        # Recipe description (if available and not too long)
+        description = recipe_data.get('description', '')
+        if description and len(description.strip()) > 0:
+            # Clean HTML tags and truncate
+            import re
+            clean_desc = re.sub(r'<[^>]+>', '', description)
+            if len(clean_desc) > 100:
+                clean_desc = clean_desc[:97] + "..."
+            print(f"   💭 {clean_desc}")
+        
+        # Nutrition highlight (if available)
+        nutrition = recipe_data.get('nutrition', {})
+        if nutrition and isinstance(nutrition, dict):
+            nutrition_parts = []
+            for key in ['calories', 'protein', 'carbs']:
+                if key in nutrition:
+                    nutrition_parts.append(f"{key}: {nutrition[key]}")
+            
+            if nutrition_parts:
+                nutrition_display = ' | '.join(nutrition_parts[:3])
+                print(f"   🥗 Nutrition: {nutrition_display}")
+        
+        # Special indicators
+        indicators = []
+        
+        # Dietary restrictions
+        dietary = recipe_data.get('dietary_restrictions', [])
+        if dietary:
+            dietary_icons = {
+                'vegetarian': '🌱',
+                'vegan': '🌿', 
+                'gluten-free': '🚫🌾',
+                'dairy-free': '🚫🥛'
+            }
+            for restriction in dietary[:3]:
+                icon = dietary_icons.get(restriction.lower(), '🏷️')
+                indicators.append(f"{icon} {restriction}")
+        
+        # Quick/easy indicators
+        cook_time_str = recipe_data.get('cook_time', '').lower()
+        if any(word in cook_time_str for word in ['15', '20', 'quick', 'fast']):
+            indicators.append("⚡ Quick")
+        
+        if indicators:
+            print(f"   🎯 {' | '.join(indicators)}")
+        
+        # Add subtle separator for readability
+        print("   " + "─" * 50)
+
+def main():
+    """Interactive ingredient matcher main function"""
+    try:
+        matcher = SmartIngredientMatcher()
+        suggestion = matcher.get_recipe_suggestions_interactive()
+        
+        if suggestion.matches:
+            print("\nWould you like to see detailed instructions for any recipe?")
+            choice = input("Enter recipe number (or 'quit'): ").strip()
+            
+            try:
+                recipe_num = int(choice) - 1
+                if 0 <= recipe_num < len(suggestion.matches):
+                    match = suggestion.matches[recipe_num]
+                    
+                    print_header(f"RECIPE: {match.recipe_name}")
+                    recipe_data = match.recipe_data
+                    
+                    print(f"Servings: {recipe_data.get('servings', 'Unknown')}")
+                    print(f"Cook Time: {recipe_data.get('cook_time', 'Unknown')}")
+                    print(f"Difficulty: {recipe_data.get('difficulty', 'Unknown')}")
+                    
+                    print_separator()
+                    print("INGREDIENTS:")
+                    for ingredient in recipe_data.get('ingredients', []):
+                        status = "✅" if ingredient in match.matching_ingredients else "🛒"
+                        print(f"  {status} {ingredient}")
+                    
+                    print_separator()
+                    print("INSTRUCTIONS:")
+                    for i, instruction in enumerate(recipe_data.get('instructions', []), 1):
+                        print(f"  {i}. {instruction}")
+                    
+                    # Offer to save online recipes
+                    if match.source.startswith("online"):
+                        if get_yes_no_input(f"\nSave '{match.recipe_name}' to your recipe collection?"):
+                            if matcher.save_favorite_recipe(match):
+                                print("Recipe saved successfully!")
+                            else:
+                                print("Failed to save recipe.")
+                    
+                    print_separator()
+            
+            except (ValueError, IndexError):
+                print("Invalid recipe number.")
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        logger.error(f"Error in ingredient matcher: {e}")
+
+if __name__ == "__main__":
+    main()
