@@ -230,20 +230,16 @@ class Config:
     def validate(self) -> list[str]:
         """Validate configuration and return any errors"""
         errors = []
-        
-        # Check API configuration
+    
         if not self.api.available_apis:
             errors.append("No recipe APIs available - consider adding API keys")
         
-        # Check database configuration
         if self.database.cache_size < 0:
             errors.append("Database cache size must be non-negative")
-        
-        # Check web configuration
+
         if not (1024 <= self.web.port <= 65535):
             errors.append("Web port must be between 1024 and 65535")
-        
-        # Check directories exist
+
         if not Path(self.database.backup_directory).exists():
             errors.append(f"Backup directory does not exist: {self.database.backup_directory}")
         
@@ -261,3 +257,21 @@ config_map = {
 }
 
 config = config_map.get(current_environment, development_config)
+
+def get_config(environment: str = None) -> Config:
+    """Get configuration for specific environment"""
+    if environment is None:
+        return config
+    return config_map.get(environment.lower(), development_config)
+
+def is_production() -> bool:
+    """Check if running in production"""
+    return config.environment == "production"
+
+def is_development() -> bool:
+    """Check if running in development"""
+    return config.environment == "development"
+
+def has_api_keys() -> bool:
+    """Check if any API keys are configured"""
+    return len(config.api.available_apis) > 1 
