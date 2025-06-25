@@ -85,92 +85,6 @@ class NutritionInfo:
             return NutritionInfo()
         return self.scale(1.0 / servings)
 
-"""
-Nutrition Calculator and Analysis System
-Calculate and analyze nutritional information for recipes and meal plans
-"""
-
-import re
-import logging
-from typing import Dict, List, Optional, Tuple, Any, Union
-from dataclasses import dataclass, asdict
-from datetime import datetime
-
-logger = logging.getLogger(__name__)
-
-@dataclass
-class NutritionInfo:
-    """Nutritional information for a recipe or meal"""
-    calories: float = 0.0
-    protein_g: float = 0.0
-    carbs_g: float = 0.0
-    fat_g: float = 0.0
-    fiber_g: float = 0.0
-    sugar_g: float = 0.0
-    sodium_mg: float = 0.0
-    cholesterol_mg: float = 0.0
-    vitamin_c_mg: float = 0.0
-    calcium_mg: float = 0.0
-    iron_mg: float = 0.0
-    potassium_mg: float = 0.0
-    vitamin_a_iu: float = 0.0
-    vitamin_d_iu: float = 0.0
-    saturated_fat_g: float = 0.0
-    trans_fat_g: float = 0.0
-    monounsaturated_fat_g: float = 0.0
-    polyunsaturated_fat_g: float = 0.0
-    
-    def __add__(self, other: 'NutritionInfo') -> 'NutritionInfo':
-        """Add two nutrition info objects"""
-        return NutritionInfo(
-            calories=self.calories + other.calories,
-            protein_g=self.protein_g + other.protein_g,
-            carbs_g=self.carbs_g + other.carbs_g,
-            fat_g=self.fat_g + other.fat_g,
-            fiber_g=self.fiber_g + other.fiber_g,
-            sugar_g=self.sugar_g + other.sugar_g,
-            sodium_mg=self.sodium_mg + other.sodium_mg,
-            cholesterol_mg=self.cholesterol_mg + other.cholesterol_mg,
-            vitamin_c_mg=self.vitamin_c_mg + other.vitamin_c_mg,
-            calcium_mg=self.calcium_mg + other.calcium_mg,
-            iron_mg=self.iron_mg + other.iron_mg,
-            potassium_mg=self.potassium_mg + other.potassium_mg,
-            vitamin_a_iu=self.vitamin_a_iu + other.vitamin_a_iu,
-            vitamin_d_iu=self.vitamin_d_iu + other.vitamin_d_iu,
-            saturated_fat_g=self.saturated_fat_g + other.saturated_fat_g,
-            trans_fat_g=self.trans_fat_g + other.trans_fat_g,
-            monounsaturated_fat_g=self.monounsaturated_fat_g + other.monounsaturated_fat_g,
-            polyunsaturated_fat_g=self.polyunsaturated_fat_g + other.polyunsaturated_fat_g
-        )
-    
-    def scale(self, factor: float) -> 'NutritionInfo':
-        """Scale nutrition info by a factor"""
-        return NutritionInfo(
-            calories=self.calories * factor,
-            protein_g=self.protein_g * factor,
-            carbs_g=self.carbs_g * factor,
-            fat_g=self.fat_g * factor,
-            fiber_g=self.fiber_g * factor,
-            sugar_g=self.sugar_g * factor,
-            sodium_mg=self.sodium_mg * factor,
-            cholesterol_mg=self.cholesterol_mg * factor,
-            vitamin_c_mg=self.vitamin_c_mg * factor,
-            calcium_mg=self.calcium_mg * factor,
-            iron_mg=self.iron_mg * factor,
-            potassium_mg=self.potassium_mg * factor,
-            vitamin_a_iu=self.vitamin_a_iu * factor,
-            vitamin_d_iu=self.vitamin_d_iu * factor,
-            saturated_fat_g=self.saturated_fat_g * factor,
-            trans_fat_g=self.trans_fat_g * factor,
-            monounsaturated_fat_g=self.monounsaturated_fat_g * factor,
-            polyunsaturated_fat_g=self.polyunsaturated_fat_g * factor
-        )
-    
-    def per_serving(self, servings: int) -> 'NutritionInfo':
-        """Calculate nutrition per serving"""
-        if servings <= 0:
-            return NutritionInfo()
-        return self.scale(1.0 / servings)
     
 @dataclass
 class DailyNutritionTargets:
@@ -530,3 +444,528 @@ class NutritionCalculator:
             'gelatin': NutritionInfo(355, 85.6, 0, 0.1, 0, 0, 196, 0, 0, 0, 0.0, 0, 0, 0, 0.0, 0, 0.0, 0.0),
         }
     
+    def parse_ingredient_amount(self, ingredient_text: str) -> Tuple[float, str, str]:
+        """Parse ingredient text to extract amount, unit, and ingredient name"""
+        # Clean the text
+        ingredient_text = ingredient_text.strip()
+        
+        # Regular expressions for different patterns
+        patterns = [
+            # "2 cups flour" or "1.5 tbsp oil" 
+            r'^(\d+(?:\.\d+)?(?:/\d+)?)\s*(\w+)?\s+(.+)$',
+            # "1/2 cup sugar"
+            r'^(\d+/\d+)\s*(\w+)?\s+(.+)$',
+            # "2-3 cloves garlic"
+            r'^(\d+)-\d+\s*(\w+)?\s+(.+)$',
+            # "a pinch of salt" or "handful of nuts"
+            r'^(?:a\s+)?(?:pinch|handful|dash|splash)\s+(?:of\s+)?(.+)$'
+        ]
+        
+        for pattern in patterns:
+            match = re.match(pattern, ingredient_text, re.IGNORECASE)
+            if match:
+                if 'pinch' in pattern or 'handful' in pattern:
+                    # Special case for "pinch", "handful", etc.
+                    return 0.1, '', match.group(1).strip()
+                else:
+                    amount_str, unit, ingredient = match.groups()
+                    
+                    # Handle fractions
+                    if '/' in amount_str:
+                        parts = amount_str.split('/')
+                        amount = float(parts[0]) / float(parts[1])
+                    else:
+                        amount = float(amount_str)
+                    
+                    return amount, unit.lower() if unit else '', ingredient.strip()
+        
+        # If no pattern matches, look for numbers at the beginning
+        number_match = re.match(r'^(\d+(?:\.\d+)?(?:/\d+)?)', ingredient_text)
+        if number_match:
+            amount_str = number_match.group(1)
+            remaining = ingredient_text[len(amount_str):].strip()
+            
+            if '/' in amount_str:
+                parts = amount_str.split('/')
+                amount = float(parts[0]) / float(parts[1])
+            else:
+                amount = float(amount_str)
+            
+            return amount, '', remaining
+        
+        # Default case - assume 1 unit of the ingredient
+        return 1.0, '', ingredient_text.strip()
+    
+    def convert_to_grams(self, amount: float, unit: str, ingredient: str) -> float:
+        """Convert ingredient amount to grams"""
+        if not unit:
+            return amount  # Assume grams if no unit
+        
+        unit_lower = unit.lower().strip()
+        ingredient_lower = ingredient.lower().strip()
+        
+        # Handle cups specially based on ingredient
+        if unit_lower in ['cup', 'cups', 'c']:
+            for ing_key, weight in self.ingredient_cup_weights.items():
+                if ing_key in ingredient_lower:
+                    return amount * weight
+            # Default cup weight for unknown ingredients
+            return amount * 240  # Water-like density
+        
+        # Use standard conversions
+        if unit_lower in self.measurement_conversions:
+            return amount * self.measurement_conversions[unit_lower]
+        
+        # Handle some special cases
+        special_conversions = {
+            'slice': 30,    # Average slice of bread/cheese
+            'slices': 30,
+            'piece': 50,    # Average piece
+            'pieces': 50,
+            'clove': 3,     # Garlic clove
+            'cloves': 3,
+            'head': 600,    # Head of lettuce/cabbage
+            'heads': 600,
+            'bunch': 100,   # Bunch of herbs
+            'bunches': 100,
+            'sprig': 2,     # Sprig of herbs
+            'sprigs': 2,
+            'leaf': 1,      # Leaf of basil/mint
+            'leaves': 1,
+            'can': 400,     # Average can
+            'cans': 400,
+            'package': 200, # Average package
+            'packages': 200,
+            'bottle': 500,  # Average bottle
+            'bottles': 500,
+            'bag': 500,     # Average bag
+            'bags': 500,
+            'medium': 150,  # Medium size (apple, onion, etc.)
+            'large': 200,   # Large size
+            'small': 100,   # Small size
+        }
+        
+        if unit_lower in special_conversions:
+            return amount * special_conversions[unit_lower]
+        
+        # If unit not recognized, assume grams
+        logger.warning(f"Unknown unit '{unit}' for ingredient '{ingredient}', assuming grams")
+        return amount
+    
+    def calculate_ingredient_nutrition(self, ingredient_text: str) -> NutritionInfo:
+        """Calculate nutrition for a single ingredient"""
+        amount, unit, ingredient_name = self.parse_ingredient_amount(ingredient_text)
+        grams = self.convert_to_grams(amount, unit, ingredient_name)
+        
+        # Find matching nutrition data
+        ingredient_lower = ingredient_name.lower().strip()
+        nutrition_per_100g = None
+        
+        # Exact match first
+        if ingredient_lower in self.ingredient_nutrition_db:
+            nutrition_per_100g = self.ingredient_nutrition_db[ingredient_lower]
+        else:
+            # Partial match - find the best match
+            best_match = None
+            best_score = 0
+            
+            for db_ingredient, nutrition in self.ingredient_nutrition_db.items():
+                # Calculate similarity score
+                score = 0
+                db_words = set(db_ingredient.split())
+                ingredient_words = set(ingredient_lower.split())
+                
+                # Exact word matches
+                common_words = db_words.intersection(ingredient_words)
+                score += len(common_words) * 2
+                
+                # Substring matches
+                if db_ingredient in ingredient_lower or ingredient_lower in db_ingredient:
+                    score += 1
+                
+                if score > best_score:
+                    best_score = score
+                    best_match = nutrition
+            
+            nutrition_per_100g = best_match
+        
+        if nutrition_per_100g is None:
+            # Default nutrition for unknown ingredients (assume it's a vegetable)
+            logger.warning(f"No nutrition data found for: {ingredient_name}")
+            nutrition_per_100g = NutritionInfo(25, 1.0, 5.0, 0.2, 2.0, 3.0, 10, 0, 10, 20, 0.5, 150, 100, 0, 0.0, 0, 0.0, 0.1)
+        
+        # Scale to actual amount
+        factor = grams / 100.0
+        return nutrition_per_100g.scale(factor)
+    
+    def calculate_recipe_nutrition(self, recipe_data: Dict) -> NutritionInfo:
+        """Calculate total nutrition for a recipe"""
+        total_nutrition = NutritionInfo()
+        
+        ingredients = recipe_data.get('ingredients', [])
+        
+        for ingredient in ingredients:
+            try:
+                ingredient_nutrition = self.calculate_ingredient_nutrition(ingredient)
+                total_nutrition = total_nutrition + ingredient_nutrition
+            except Exception as e:
+                logger.warning(f"Error calculating nutrition for ingredient '{ingredient}': {e}")
+                continue
+        
+        return total_nutrition
+    
+    def analyze_recipe_nutrition(self, recipe_data: Dict) -> Dict[str, Any]:
+        """Comprehensive nutrition analysis for a recipe"""
+        total_nutrition = self.calculate_recipe_nutrition(recipe_data)
+        servings = recipe_data.get('servings', 1)
+        per_serving_nutrition = total_nutrition.per_serving(servings)
+        
+        # Calculate macronutrient percentages
+        total_calories = per_serving_nutrition.calories
+        if total_calories > 0:
+            protein_percent = (per_serving_nutrition.protein_g * 4) / total_calories * 100
+            carbs_percent = (per_serving_nutrition.carbs_g * 4) / total_calories * 100
+            fat_percent = (per_serving_nutrition.fat_g * 9) / total_calories * 100
+        else:
+            protein_percent = carbs_percent = fat_percent = 0
+        
+        # Nutrition scoring
+        nutrition_score = self._calculate_nutrition_score(per_serving_nutrition)
+        
+        # Health indicators
+        health_indicators = self._analyze_health_indicators(per_serving_nutrition)
+        
+        # Dietary compliance
+        dietary_compliance = self._check_dietary_compliance(recipe_data, per_serving_nutrition)
+        
+        # Nutrient density score
+        nutrient_density = self._calculate_nutrient_density(per_serving_nutrition)
+        
+        return {
+            'total_nutrition': asdict(total_nutrition),
+            'per_serving_nutrition': asdict(per_serving_nutrition),
+            'macronutrient_breakdown': {
+                'protein_percent': round(protein_percent, 1),
+                'carbs_percent': round(carbs_percent, 1),
+                'fat_percent': round(fat_percent, 1)
+            },
+            'nutrition_score': nutrition_score,
+            'health_indicators': health_indicators,
+            'dietary_compliance': dietary_compliance,
+            'nutrient_density': nutrient_density,
+            'servings': servings,
+            'analysis_date': datetime.now().isoformat()
+        }
+    
+    def _calculate_nutrition_score(self, nutrition: NutritionInfo) -> Dict[str, Any]:
+        """Calculate a nutrition quality score (0-100)"""
+        score = 50  # Base score
+        
+        # Positive factors
+        if nutrition.protein_g >= 20:
+            score += 20
+        elif nutrition.protein_g >= 15:
+            score += 15
+        elif nutrition.protein_g >= 10:
+            score += 10
+        elif nutrition.protein_g >= 5:
+            score += 5
+        
+        if nutrition.fiber_g >= 8:
+            score += 20
+        elif nutrition.fiber_g >= 5:
+            score += 15
+        elif nutrition.fiber_g >= 3:
+            score += 10
+        elif nutrition.fiber_g >= 1:
+            score += 5
+        
+        if nutrition.vitamin_c_mg >= 50:
+            score += 10
+        elif nutrition.vitamin_c_mg >= 20:
+            score += 5
+        
+        if nutrition.calcium_mg >= 200:
+            score += 10
+        elif nutrition.calcium_mg >= 100:
+            score += 5
+        
+        if nutrition.iron_mg >= 5:
+            score += 10
+        elif nutrition.iron_mg >= 2:
+            score += 5
+        
+        # Negative factors
+        if nutrition.sodium_mg > 1500:
+            score -= 25
+        elif nutrition.sodium_mg > 1000:
+            score -= 20
+        elif nutrition.sodium_mg > 600:
+            score -= 10
+        
+        if nutrition.sugar_g > 25:
+            score -= 20
+        elif nutrition.sugar_g > 15:
+            score -= 15
+        elif nutrition.sugar_g > 10:
+            score -= 10
+        
+        if nutrition.saturated_fat_g > 10:
+            score -= 20
+        elif nutrition.saturated_fat_g > 7:
+            score -= 15
+        elif nutrition.saturated_fat_g > 5:
+            score -= 10
+        
+        if nutrition.trans_fat_g > 0.5:
+            score -= 30
+        elif nutrition.trans_fat_g > 0:
+            score -= 15
+        
+        if nutrition.cholesterol_mg > 200:
+            score -= 15
+        elif nutrition.cholesterol_mg > 100:
+            score -= 10
+        
+        # Ensure score is between 0 and 100
+        score = max(0, min(100, score))
+        
+        # Determine grade
+        if score >= 90:
+            grade = 'A+'
+        elif score >= 85:
+            grade = 'A'
+        elif score >= 80:
+            grade = 'A-'
+        elif score >= 75:
+            grade = 'B+'
+        elif score >= 70:
+            grade = 'B'
+        elif score >= 65:
+            grade = 'B-'
+        elif score >= 60:
+            grade = 'C+'
+        elif score >= 55:
+            grade = 'C'
+        elif score >= 50:
+            grade = 'C-'
+        elif score >= 45:
+            grade = 'D+'
+        elif score >= 40:
+            grade = 'D'
+        else:
+            grade = 'F'
+        
+        return {
+            'score': score,
+            'grade': grade,
+            'description': self._get_score_description(score)
+        }
+    
+    def _get_score_description(self, score: int) -> str:
+        """Get description for nutrition score"""
+        if score >= 90:
+            return "Outstanding nutritional profile with excellent balance"
+        elif score >= 80:
+            return "Excellent nutritional value with minor areas for improvement"
+        elif score >= 70:
+            return "Good nutritional balance with room for enhancement"
+        elif score >= 60:
+            return "Adequate nutrition but could be improved"
+        elif score >= 50:
+            return "Fair nutritional value with several areas needing improvement"
+        elif score >= 40:
+            return "Below average nutrition - consider healthier alternatives"
+        else:
+            return "Poor nutritional profile - significant improvements needed"
+    
+    def _analyze_health_indicators(self, nutrition: NutritionInfo) -> Dict[str, str]:
+        """Analyze health indicators from nutrition data"""
+        indicators = {}
+        
+        # Protein adequacy
+        if nutrition.protein_g >= 25:
+            indicators['protein'] = "Excellent protein content"
+        elif nutrition.protein_g >= 20:
+            indicators['protein'] = "High protein content"
+        elif nutrition.protein_g >= 15:
+            indicators['protein'] = "Good protein source"
+        elif nutrition.protein_g >= 10:
+            indicators['protein'] = "Moderate protein content"
+        else:
+            indicators['protein'] = "Low protein content"
+        
+        # Fiber content
+        if nutrition.fiber_g >= 10:
+            indicators['fiber'] = "Excellent fiber content"
+        elif nutrition.fiber_g >= 8:
+            indicators['fiber'] = "High fiber content"
+        elif nutrition.fiber_g >= 5:
+            indicators['fiber'] = "Good fiber source"
+        elif nutrition.fiber_g >= 3:
+            indicators['fiber'] = "Moderate fiber content"
+        else:
+            indicators['fiber'] = "Low fiber content"
+        
+        # Sodium levels
+        if nutrition.sodium_mg > 1500:
+            indicators['sodium'] = "Very high sodium - reduce consumption"
+        elif nutrition.sodium_mg > 1000:
+            indicators['sodium'] = "High sodium - consider reducing"
+        elif nutrition.sodium_mg > 600:
+            indicators['sodium'] = "Moderate sodium levels"
+        elif nutrition.sodium_mg > 300:
+            indicators['sodium'] = "Low sodium content"
+        else:
+            indicators['sodium'] = "Very low sodium content"
+        
+        # Sugar levels
+        if nutrition.sugar_g > 25:
+            indicators['sugar'] = "Very high sugar content"
+        elif nutrition.sugar_g > 15:
+            indicators['sugar'] = "High sugar content"
+        elif nutrition.sugar_g > 10:
+            indicators['sugar'] = "Moderate sugar content"
+        else:
+            indicators['sugar'] = "Low sugar content"
+        
+        # Calorie density
+        if nutrition.calories > 700:
+            indicators['calories'] = "Very high calorie dish"
+        elif nutrition.calories > 500:
+            indicators['calories'] = "High calorie dish"
+        elif nutrition.calories > 300:
+            indicators['calories'] = "Moderate calorie content"
+        elif nutrition.calories > 150:
+            indicators['calories'] = "Lower calorie option"
+        else:
+            indicators['calories'] = "Very low calorie option"
+        
+        # Fat quality
+        if nutrition.trans_fat_g > 0:
+            indicators['fat_quality'] = "Contains trans fats - avoid if possible"
+        elif nutrition.saturated_fat_g > 10:
+            indicators['fat_quality'] = "High saturated fat content"
+        elif nutrition.saturated_fat_g > 5:
+            indicators['fat_quality'] = "Moderate saturated fat content"
+        else:
+            indicators['fat_quality'] = "Good fat profile"
+        
+        # Micronutrients
+        micronutrient_score = 0
+        if nutrition.vitamin_c_mg >= 20:
+            micronutrient_score += 1
+        if nutrition.vitamin_a_iu >= 1000:
+            micronutrient_score += 1
+        if nutrition.calcium_mg >= 100:
+            micronutrient_score += 1
+        if nutrition.iron_mg >= 2:
+            micronutrient_score += 1
+        if nutrition.potassium_mg >= 300:
+            micronutrient_score += 1
+        
+        if micronutrient_score >= 4:
+            indicators['micronutrients'] = "Excellent micronutrient profile"
+        elif micronutrient_score >= 3:
+            indicators['micronutrients'] = "Good micronutrient content"
+        elif micronutrient_score >= 2:
+            indicators['micronutrients'] = "Moderate micronutrient content"
+        else:
+            indicators['micronutrients'] = "Limited micronutrient content"
+        
+        return indicators
+    
+    def _check_dietary_compliance(self, recipe_data: Dict, nutrition: NutritionInfo) -> Dict[str, bool]:
+        """Check compliance with various dietary patterns"""
+        compliance = {}
+        
+        # Low sodium (< 600mg per serving)
+        compliance['low_sodium'] = nutrition.sodium_mg < 600
+        
+        # Low sugar (< 10g per serving)
+        compliance['low_sugar'] = nutrition.sugar_g < 10
+        
+        # High protein (> 15g per serving)
+        compliance['high_protein'] = nutrition.protein_g > 15
+        
+        # High fiber (> 5g per serving)
+        compliance['high_fiber'] = nutrition.fiber_g > 5
+        
+        # Low cholesterol (< 100mg per serving)
+        compliance['low_cholesterol'] = nutrition.cholesterol_mg < 100
+        
+        # Low saturated fat (< 5g per serving)
+        compliance['low_saturated_fat'] = nutrition.saturated_fat_g < 5
+        
+        # Balanced macros (protein 20-35%, carbs 45-65%, fat 20-35%)
+        total_calories = nutrition.calories
+        if total_calories > 0:
+            protein_percent = (nutrition.protein_g * 4) / total_calories * 100
+            carbs_percent = (nutrition.carbs_g * 4) / total_calories * 100
+            fat_percent = (nutrition.fat_g * 9) / total_calories * 100
+            
+            compliance['balanced_macros'] = (
+                20 <= protein_percent <= 35 and
+                45 <= carbs_percent <= 65 and
+                20 <= fat_percent <= 35
+            )
+        else:
+            compliance['balanced_macros'] = False
+        
+        # Heart healthy (low sodium, low saturated fat, no trans fat)
+        compliance['heart_healthy'] = (
+            nutrition.sodium_mg < 600 and
+            nutrition.saturated_fat_g < 7 and
+            nutrition.trans_fat_g < 0.5
+        )
+        
+        # Diabetic friendly (low sugar, high fiber, balanced carbs)
+        compliance['diabetic_friendly'] = (
+            nutrition.sugar_g < 15 and
+            nutrition.fiber_g > 3 and
+            nutrition.carbs_g < 45
+        )
+        
+        return compliance
+    
+    def _calculate_nutrient_density(self, nutrition: NutritionInfo) -> Dict[str, Any]:
+        """Calculate nutrient density score (nutrients per calorie)"""
+        if nutrition.calories <= 0:
+            return {'score': 0, 'grade': 'F', 'description': 'No caloric content'}
+        
+        # Calculate density scores for key nutrients (per 100 calories)
+        calories_factor = 100 / nutrition.calories
+        
+        density_scores = {
+            'protein': nutrition.protein_g * calories_factor,
+            'fiber': nutrition.fiber_g * calories_factor,
+            'vitamin_c': nutrition.vitamin_c_mg * calories_factor,
+            'calcium': nutrition.calcium_mg * calories_factor / 10,  # Scale down
+            'iron': nutrition.iron_mg * calories_factor,
+            'potassium': nutrition.potassium_mg * calories_factor / 100,  # Scale down
+        }
+        
+        # Calculate overall density score
+        total_score = sum(density_scores.values())
+        
+        # Normalize to 0-100 scale
+        normalized_score = min(100, total_score * 2)  # Adjust multiplier as needed
+        
+        if normalized_score >= 80:
+            grade = 'A'
+            description = 'Very nutrient-dense'
+        elif normalized_score >= 60:
+            grade = 'B'
+            description = 'Good nutrient density'
+        elif normalized_score >= 40:
+            grade = 'C'
+            description = 'Moderate nutrient density'
+        elif normalized_score >= 20:
+            grade = 'D'
+            description = 'Low nutrient density'
+        else:
+            grade = 'F'
+            description = 'Very low nutrient density'
+        
+        return {
+            'score
