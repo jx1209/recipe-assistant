@@ -966,6 +966,3 @@ class NutritionCalculator:
         else:
             grade = 'F'
             description = 'Very low nutrient density'
-        
-        return {
-            'score
