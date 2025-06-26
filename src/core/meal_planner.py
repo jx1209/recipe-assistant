@@ -77,9 +77,27 @@ class UserProfile:
     max_prep_time: int = 60  # minutes
     budget_per_day: float = 25.0  # dollars
     nutritional_goals: NutritionalGoals = field(default_factory=NutritionalGoals)
+
+    def calculate_bmr(self) -> float:
+        """Calculate Basal Metabolic Rate using Mifflin-St Jeor Equation"""
+        if self.gender.lower() == 'male':
+            bmr = 10 * self.weight_kg + 6.25 * self.height_cm - 5 * self.age + 5
+        else:
+            bmr = 10 * self.weight_kg + 6.25 * self.height_cm - 5 * self.age - 161
+        return bmr
     
-
-
+    def calculate_tdee(self) -> float:
+        """Calculate Total Daily Energy Expenditure"""
+        bmr = self.calculate_bmr()
+        activity_multipliers = {
+            'sedentary': 1.2,
+            'lightly_active': 1.375,
+            'moderately_active': 1.55,
+            'very_active': 1.725,
+            'extremely_active': 1.9
+        }
+        return bmr * activity_multipliers.get(self.activity_level, 1.55)
+    
 @dataclass
 class Recipe:
     """Recipe data structure"""
