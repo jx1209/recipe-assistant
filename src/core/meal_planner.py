@@ -127,18 +127,7 @@ class Meal:
     date: date
     servings: float = 1.0
     notes: str = ""
-    
-    @property
-    def adjusted_nutrition(self) -> Dict:
-        """Get nutrition adjusted for serving size"""
-        if not self.recipe.nutrition_per_serving:
-            return {}
-        
-        return {
-            key: value * self.servings 
-            for key, value in self.recipe.nutrition_per_serving.items()
-        }
-    
+
 @dataclass
 class DayMealPlan:
     """All meals planned for a single day"""
@@ -512,3 +501,266 @@ class RecipeDatabase:
             nutrition_per_serving=json.loads(row[11]) if row[11] else None,
             cost_per_serving=row[12]
         )
+    
+class MealPlanGenerator:
+    """Intelligent meal plan generator"""
+    
+    def __init__(self, recipe_db: RecipeDatabase, nutrition_calculator=None):
+        self.recipe_db = recipe_db
+        self.nutrition_calculator = nutrition_calculator
+    
+    def generate_weekly_plan(self, user_profile: UserProfile, 
+                           start_date: date = None,
+                           preferences: Dict[str, Any] = None) -> WeeklyMealPlan:
+        """Generate a complete weekly meal plan"""
+        
+        if start_date is None:
+            start_date = date.today()
+        
+        preferences = preferences or {}
+        
+        # Calculate daily calorie target
+        daily_calories = user_profile.calculate_tdee()
+        
+        # Distribute calories across meals
+        meal_calorie_distribution = {
+            MealType.BREAKFAST: 0.25,
+            MealType.LUNCH: 0.35,
+            MealType.DINNER: 0.35,
+            MealType.SNACK: 0.05
+        }
+        
+        weekly_plan = WeeklyMealPlan(
+            start_date=start_date,
+            user_profile=user_profile
+        )
+        
+        # Generate plan for each day
+        for day_offset in range(7):
+            current_date = start_date + timedelta(days=day_offset)
+            day_plan = self._generate_day_plan(
+                current_date, 
+                user_profile, 
+                daily_calories,
+                meal_calorie_distribution,
+                preferences
+            )
+            weekly_plan.add_day(day_plan)
+        
+        # Generate shopping list
+        weekly_plan.shopping_list = self._generate_shopping_list(weekly_plan)
+        weekly_plan.total_cost = self._calculate_total_cost(weekly_plan)
+        
+        return weekly_plan
+    
+    def _generate_day_plan(self, plan_date: date, user_profile: UserProfile,
+                          daily_calories: float, calorie_distribution: Dict[MealType, float],
+                          preferences: Dict[str, Any]) -> DayMealPlan:
+        """Generate meal plan for a single day"""
+        
+        day_plan = DayMealPlan(date=plan_date)
+        
+        # Generate each meal
+        for meal_type, calorie_ratio in calorie_distribution.items():
+            target_calories = daily_calories * calorie_ratio
+            
+            if meal_type == MealType.SNACK:
+                # Generate multiple snacks if needed
+                snack_recipes = self._select_recipes_for_meal(
+                    meal_type, user_profile, target_calories, preferences
+                )
+                for recipe in snack_recipes[:2]:  # Max 2 snacks
+                    meal = Meal(
+                        recipe=recipe,
+                        meal_type=meal_type,
+                        date=plan_date,
+                        servings=self._calculate_optimal_servings(recipe, target_calories / 2)
+                    )
+                    day_plan.snacks.append(meal)
+            else:
+                recipes = self._select_recipes_for_meal(
+                    meal_type, user_profile, target_calories, preferences
+                )
+                
+                if recipes:
+                    recipe = recipes[0]  # Take the best match
+                    servings = self._calculate_optimal_servings(recipe, target_calories)
+                    
+                    meal = Meal(
+                        recipe=recipe,
+                        meal_type=meal_type,
+                        date=plan_date,
+                        servings=servings
+                    )
+                    
+                    if meal_type == MealType.BREAKFAST:
+                        day_plan.breakfast = meal
+                    elif meal_type == MealType.LUNCH:
+                        day_plan.lunch = meal
+                    elif meal_type == MealType.DINNER:
+                        day_plan.dinner = meal
+        
+        return day_plan
+    
+    def _select_recipes_for_meal(self, meal_type: MealType, user_profile: UserProfile,
+                               target_calories: float, preferences: Dict[str, Any]) -> List[Recipe]:
+        """Select appropriate recipes for a meal"""
+        
+        # Get all recipes for this meal type
+        candidates = self.recipe_db.get_recipes_by_meal_type(meal_type)
+        
+        # Filter by user constraints
+        filtered_recipes = []
+        
+        for recipe in candidates:
+            # Check dietary restrictions
+            if not self._recipe_meets_dietary_preferences(recipe, user_profile):
+                continue
+            
+            # Check allergies
+            if self._recipe_contains_allergens(recipe, user_profile.allergies):
+                continue
+            
+            # Check dislikes
+            if self._recipe_contains_dislikes(recipe, user_profile.dislikes):
+                continue
+            
+            # Check cooking skill and time
+            if recipe.difficulty.value == 'advanced' and user_profile.cooking_skill == CookingSkill.BEGINNER:
+                continue
+            
+            if recipe.total_time > user_profile.max_prep_time:
+                continue
+            
+            # Check budget
+            if recipe.cost_per_serving > user_profile.budget_per_day / 3:  # Rough estimate
+                continue
+            
+            filtered_recipes.append(recipe)
+        
+        # Score and rank recipes
+        scored_recipes = []
+        for recipe in filtered_recipes:
+            score = self._score_recipe_for_meal(recipe, target_calories, user_profile, preferences)
+            scored_recipes.append((score, recipe))
+        
+        # Sort by score (highest first)
+        scored_recipes.sort(key=lambda x: x[0], reverse=True)
+        
+        return [recipe for score, recipe in scored_recipes[:5]]  # Return top 5
+    
+    def _recipe_meets_dietary_preferences(self, recipe: Recipe, user_profile: UserProfile) -> bool:
+        """Check if recipe meets dietary preferences"""
+        ingredients_text = ' '.join(recipe.ingredients).lower()
+        
+        for preference in user_profile.dietary_preferences:
+            if preference == DietaryPreference.VEGETARIAN:
+                meat_keywords = ['chicken', 'beef', 'pork', 'fish', 'salmon', 'tuna', 'turkey', 'lamb']
+                if any(meat in ingredients_text for meat in meat_keywords):
+                    return False
+            
+            elif preference == DietaryPreference.VEGAN:
+                animal_keywords = ['chicken', 'beef', 'pork', 'fish', 'milk', 'cheese', 'yogurt', 'eggs', 'butter', 'honey']
+                if any(animal in ingredients_text for animal in animal_keywords):
+                    return False
+            
+            elif preference == DietaryPreference.GLUTEN_FREE:
+                gluten_keywords = ['flour', 'bread', 'pasta', 'wheat', 'barley', 'rye']
+                if any(gluten in ingredients_text for gluten in gluten_keywords):
+                    return False
+            
+            elif preference == DietaryPreference.DAIRY_FREE:
+                dairy_keywords = ['milk', 'cheese', 'yogurt', 'butter', 'cream']
+                if any(dairy in ingredients_text for dairy in dairy_keywords):
+                    return False
+            
+            elif preference == DietaryPreference.KETO:
+                if recipe.nutrition_per_serving:
+                    carb_ratio = (recipe.nutrition_per_serving.get('carbs_g', 0) * 4) / max(recipe.nutrition_per_serving.get('calories', 1), 1)
+                    if carb_ratio > 0.05:  # More than 5% carbs
+                        return False
+        
+        return True
+    
+    def _recipe_contains_allergens(self, recipe: Recipe, allergies: List[str]) -> bool:
+        """Check if recipe contains allergens"""
+        ingredients_text = ' '.join(recipe.ingredients).lower()
+        return any(allergen.lower() in ingredients_text for allergen in allergies)
+    
+    def _recipe_contains_dislikes(self, recipe: Recipe, dislikes: List[str]) -> bool:
+        """Check if recipe contains disliked ingredients"""
+        ingredients_text = ' '.join(recipe.ingredients).lower()
+        return any(dislike.lower() in ingredients_text for dislike in dislikes)
+    
+    def _score_recipe_for_meal(self, recipe: Recipe, target_calories: float,
+                             user_profile: UserProfile, preferences: Dict[str, Any]) -> float:
+        """Score a recipe for how well it fits the meal requirements"""
+        score = 0.0
+        
+        if not recipe.nutrition_per_serving:
+            return 0.0
+        
+        nutrition = recipe.nutrition_per_serving
+        
+        # Calorie matching (0-30 points)
+        calorie_diff = abs(nutrition.get('calories', 0) - target_calories)
+        calorie_score = max(0, 30 - (calorie_diff / target_calories * 100))
+        score += calorie_score
+        
+        # Protein content (0-20 points)
+        protein_ratio = nutrition.get('protein_g', 0) * 4 / max(nutrition.get('calories', 1), 1)
+        if protein_ratio >= 0.25:  # 25% or more protein
+            score += 20
+        elif protein_ratio >= 0.20:
+            score += 15
+        elif protein_ratio >= 0.15:
+            score += 10
+        
+        # Fiber content (0-15 points)
+        fiber_per_cal = nutrition.get('fiber_g', 0) / max(nutrition.get('calories', 1), 1) * 100
+        if fiber_per_cal >= 2.0:
+            score += 15
+        elif fiber_per_cal >= 1.5:
+            score += 10
+        elif fiber_per_cal >= 1.0:
+            score += 5
+        
+        # Cooking time preference (0-15 points)
+        if recipe.total_time <= 15:
+            score += 15
+        elif recipe.total_time <= 30:
+            score += 10
+        elif recipe.total_time <= 45:
+            score += 5
+        
+        # Cost efficiency (0-10 points)
+        if recipe.cost_per_serving <= 5.0:
+            score += 10
+        elif recipe.cost_per_serving <= 8.0:
+            score += 7
+        elif recipe.cost_per_serving <= 12.0:
+            score += 4
+        
+        # Skill level match (0-10 points)
+        if recipe.difficulty == user_profile.cooking_skill:
+            score += 10
+        elif recipe.difficulty.value in ['beginner', 'intermediate'] and user_profile.cooking_skill != CookingSkill.BEGINNER:
+            score += 7
+        
+        return score
+    
+    def _calculate_optimal_servings(self, recipe: Recipe, target_calories: float) -> float:
+        """Calculate optimal serving size to match target calories"""
+        if not recipe.nutrition_per_serving or recipe.nutrition_per_serving.get('calories', 0) == 0:
+            return 1.0
+        
+        recipe_calories = recipe.nutrition_per_serving['calories']
+        optimal_servings = target_calories / recipe_calories
+        
+        # Round to reasonable serving sizes
+        if optimal_servings < 0.5:
+            return 0.5
+        elif optimal_servings > 3.0:
+            return 3.0
+        else:
+            return round(optimal_servings * 4) / 4  # Round to quarter servings
