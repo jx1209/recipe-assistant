@@ -3,6 +3,7 @@ Professional Meal Planning System
 Comprehensive meal planning with nutrition tracking and smart recommendations
 """
 
+import asyncio
 import json
 import sqlite3
 import random
@@ -11,8 +12,10 @@ from typing import Dict, List, Optional, Tuple, Set, Union, Any
 from dataclasses import dataclass, field, asdict
 from enum import Enum
 import logging
+import statistics
 from collections import defaultdict, Counter
 import re
+import hashlib
 
 logger = logging.getLogger(__name__)
 
@@ -837,6 +840,98 @@ class MealPlanGenerator:
                 total_cost += meal_cost
         
         return round(total_cost, 2)
+
+class NutritionCalculator:
+    """Calculate and validate nutritional information"""
+    
+    def __init__(self, api_key: Optional[str] = None):
+        self.api_key = api_key
+        self.cache = {}
+    
+    async def get_nutrition_data(self, ingredient: str, amount: str) -> Dict[str, float]:
+        """Get nutrition data for an ingredient"""
+        cache_key = f"{ingredient}_{amount}"
+        
+        if cache_key in self.cache:
+            return self.cache[cache_key]
+        
+        # Mock nutrition data for demo - in production, integrate with USDA API or similar
+        nutrition_data = self._get_mock_nutrition_data(ingredient, amount)
+        self.cache[cache_key] = nutrition_data
+        
+        return nutrition_data
+    
+    def _get_mock_nutrition_data(self, ingredient: str, amount: str) -> Dict[str, float]:
+        """Mock nutrition data - replace with real API integration"""
+        # Basic nutrition estimates per 100g
+        nutrition_db = {
+            'chicken breast': {'calories': 165, 'protein_g': 31, 'carbs_g': 0, 'fat_g': 3.6, 'fiber_g': 0},
+            'salmon': {'calories': 208, 'protein_g': 25, 'carbs_g': 0, 'fat_g': 12, 'fiber_g': 0},
+            'quinoa': {'calories': 120, 'protein_g': 4.4, 'carbs_g': 22, 'fat_g': 1.9, 'fiber_g': 2.8},
+            'broccoli': {'calories': 34, 'protein_g': 2.8, 'carbs_g': 7, 'fat_g': 0.4, 'fiber_g': 2.6},
+            'banana': {'calories': 89, 'protein_g': 1.1, 'carbs_g': 23, 'fat_g': 0.3, 'fiber_g': 2.6},
+            'oats': {'calories': 389, 'protein_g': 17, 'carbs_g': 66, 'fat_g': 7, 'fiber_g': 11},
+            'greek yogurt': {'calories': 100, 'protein_g': 10, 'carbs_g': 6, 'fat_g': 4, 'fiber_g': 0},
+        }
+        
+        # Simple amount parsing (in production, use proper parsing)
+        amount_multiplier = 1.0
+        if 'cup' in amount:
+            amount_multiplier = 1.5
+        elif 'tbsp' in amount:
+            amount_multiplier = 0.15
+        elif any(char.isdigit() for char in amount):
+            # Extract first number
+            import re
+            numbers = re.findall(r'\d+', amount)
+            if numbers:
+                amount_multiplier = int(numbers[0]) / 100
+        
+        base_nutrition = nutrition_db.get(ingredient.lower(), {
+            'calories': 50, 'protein_g': 2, 'carbs_g': 8, 'fat_g': 1, 'fiber_g': 1
+        })
+        
+        return {k: v * amount_multiplier for k, v in base_nutrition.items()}
+    
+    def calculate_recipe_nutrition(self, recipe: Recipe) -> Dict[str, float]:
+        """Calculate total nutrition for a recipe"""
+        total_nutrition = defaultdict(float)
+        
+        for ingredient in recipe.ingredients:
+            # Parse ingredient
+            amount, unit, ingredient_name = self._parse_ingredient_simple(ingredient)
+            nutrition = asyncio.run(self.get_nutrition_data(ingredient_name, f"{amount} {unit}"))
+            
+            for nutrient, value in nutrition.items():
+                total_nutrition[nutrient] += value
+        
+        # Divide by servings to get per-serving nutrition
+        per_serving = {}
+        for nutrient, value in total_nutrition.items():
+            per_serving[nutrient] = value / recipe.servings
+        
+        return per_serving
+    
+    def _parse_ingredient_simple(self, ingredient: str) -> Tuple[float, str, str]:
+        """Simple ingredient parsing"""
+        import re
+        
+        # Match patterns like "1 cup", "2 tbsp", "200g"
+        pattern = r'^(\d+(?:\.\d+)?(?:/\d+)?)\s*(\w+)?\s+(.+)$'
+        match = re.match(pattern, ingredient.strip())
+        
+        if match:
+            amount_str, unit, name = match.groups()
+            
+            if '/' in amount_str:
+                parts = amount_str.split('/')
+                amount = float(parts[0]) / float(parts[1])
+            else:
+                amount = float(amount_str)
+            
+            return amount, unit or 'unit', name.strip()
+        
+        return 1.0, 'unit', ingredient.strip()
 
 class MealPlanOptimizer:
     """Optimize meal plans for various criteria"""
