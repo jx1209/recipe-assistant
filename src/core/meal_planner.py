@@ -888,10 +888,13 @@ class MealPlanOptimizer:
 class SmartMealPlanner:
     """Main interface for the meal planning system"""
     
-    def __init__(self, nutrition_calculator=None):
+    def __init__(self, nutrition_calculator: Optional[NutritionCalculator] = None):
         self.recipe_db = RecipeDatabase()
-        self.meal_planner = MealPlanGenerator(self.recipe_db, nutrition_calculator)
+        self.nutrition_calculator = nutrition_calculator or NutritionCalculator()
+        self.meal_planner = MealPlanGenerator(self.recipe_db, self.nutrition_calculator)
         self.optimizer = MealPlanOptimizer(self.meal_planner)
+        self.persistence = MealPlanPersistence()
+        self.meal_prep = MealPrepSuggestions()
     
     def create_user_profile(self, **kwargs) -> UserProfile:
         """Create a user profile for personalized meal planning"""
@@ -1007,4 +1010,370 @@ class SmartMealPlanner:
         output += f"Total weekly cost: ${weekly_plan.total_cost:.2f}\n"
         
         return output
+    
+class MealPrepSuggestions:
+    """Generate meal prep and cooking efficiency suggestions"""
+    
+    def __init__(self):
+        self.batch_cooking_ingredients = {
+            'grains': ['rice', 'quinoa', 'pasta', 'oats'],
+            'proteins': ['chicken', 'beef', 'beans', 'lentils'],
+            'vegetables': ['broccoli', 'carrots', 'bell peppers']
+        }
+    
+    def generate_prep_plan(self, weekly_plan: WeeklyMealPlan) -> Dict[str, Any]:
+        """Generate meal prep suggestions"""
+        prep_plan = {
+            'batch_cooking': self._identify_batch_cooking_opportunities(weekly_plan),
+            'prep_schedule': self._create_prep_schedule(weekly_plan),
+            'storage_tips': self._generate_storage_tips(weekly_plan),
+            'time_savings': self._calculate_time_savings(weekly_plan)
+        }
+        
+        return prep_plan
+    
+    def _identify_batch_cooking_opportunities(self, weekly_plan: WeeklyMealPlan) -> List[Dict[str, Any]]:
+        """Identify ingredients that can be batch cooked"""
+        ingredient_frequency = defaultdict(list)
+        
+        # Count ingredient usage across the week
+        for day_plan in weekly_plan.days.values():
+            for meal in day_plan.get_all_meals():
+                for ingredient in meal.recipe.ingredients:
+                    # Extract base ingredient name
+                    base_ingredient = self._extract_base_ingredient(ingredient)
+                    ingredient_frequency[base_ingredient].append({
+                        'meal': meal.recipe.name,
+                        'date': day_plan.date,
+                        'amount': ingredient
+                    })
+        
+        # Find ingredients used multiple times
+        batch_opportunities = []
+        for ingredient, uses in ingredient_frequency.items():
+            if len(uses) >= 2:  # Used in 2 or more meals
+                total_amount = self._estimate_total_amount(uses)
+                batch_opportunities.append({
+                    'ingredient': ingredient,
+                    'frequency': len(uses),
+                    'total_amount': total_amount,
+                    'uses': uses,
+                    'suggested_batch_size': self._suggest_batch_size(ingredient, total_amount)
+                })
+        
+        return sorted(batch_opportunities, key=lambda x: x['frequency'], reverse=True)
+    
+    def _create_prep_schedule(self, weekly_plan: WeeklyMealPlan) -> Dict[str, List[str]]:
+        """Create a meal prep schedule"""
+        prep_schedule = {
+            'Sunday': [],
+            'Wednesday': []  # Mid-week prep
+        }
+        
+        # Sunday prep (for Monday-Wednesday)
+        sunday_tasks = []
+        for day_offset in range(3):  # Monday-Wednesday
+            current_date = weekly_plan.start_date + timedelta(days=day_offset)
+            if current_date in weekly_plan.days:
+                day_plan = weekly_plan.days[current_date]
+                for meal in day_plan.get_all_meals():
+                    if meal.recipe.total_time > 30:  # Prep longer recipes
+                        sunday_tasks.append(f"Prep {meal.recipe.name} for {current_date.strftime('%A')}")
+        
+        prep_schedule['Sunday'] = sunday_tasks[:5]  # Limit to 5 tasks
+        
+        # Wednesday prep (for Thursday-Sunday)
+        wednesday_tasks = []
+        for day_offset in range(3, 7):  # Thursday-Sunday
+            current_date = weekly_plan.start_date + timedelta(days=day_offset)
+            if current_date in weekly_plan.days:
+                day_plan = weekly_plan.days[current_date]
+                for meal in day_plan.get_all_meals():
+                    if meal.recipe.total_time > 30:
+                        wednesday_tasks.append(f"Prep {meal.recipe.name} for {current_date.strftime('%A')}")
+        
+        prep_schedule['Wednesday'] = wednesday_tasks[:3]  # Limit to 3 tasks
+        
+        return prep_schedule
+    
+    def _generate_storage_tips(self, weekly_plan: WeeklyMealPlan) -> List[str]:
+        """Generate food storage tips"""
+        tips = [
+            "Store cooked grains in airtight containers for up to 5 days",
+            "Pre-cut vegetables can be stored for 3-4 days in the refrigerator",
+            "Cooked proteins should be consumed within 3-4 days",
+            "Freeze portions in individual containers for easy reheating",
+            "Label containers with contents and date prepared"
+        ]
+        
+        # Add specific tips based on ingredients
+        all_ingredients = set()
+        for day_plan in weekly_plan.days.values():
+            for meal in day_plan.get_all_meals():
+                for ingredient in meal.recipe.ingredients:
+                    all_ingredients.add(self._extract_base_ingredient(ingredient))
+        
+        if 'salad' in ' '.join(all_ingredients).lower():
+            tips.append("Store salad dressings separately to prevent wilting")
+        
+        if any('herb' in ing.lower() for ing in all_ingredients):
+            tips.append("Store fresh herbs wrapped in damp paper towels")
+        
+        return tips
+    
+    def _calculate_time_savings(self, weekly_plan: WeeklyMealPlan) -> Dict[str, int]:
+        """Calculate potential time savings from meal prep"""
+        total_cooking_time = 0
+        potential_savings = 0
+        
+        for day_plan in weekly_plan.days.values():
+            for meal in day_plan.get_all_meals():
+                total_cooking_time += meal.recipe.total_time
+                
+                # Estimate savings from batch cooking
+                if meal.recipe.total_time > 20:
+                    potential_savings += min(15, meal.recipe.total_time * 0.3)
+        
+        return {
+            'total_weekly_cooking_time': total_cooking_time,
+            'potential_savings': int(potential_savings),
+            'efficiency_improvement': f"{potential_savings/total_cooking_time*100:.1f}%"
+        }
+    
+    def _extract_base_ingredient(self, ingredient_text: str) -> str:
+        """Extract base ingredient name"""
+        # Remove measurements and descriptors
+        ingredient = ingredient_text.lower()
+        
+        # Remove common measurements
+        measurements = ['cup', 'tbsp', 'tsp', 'oz', 'lb', 'g', 'kg', 'ml', 'l']
+        for measure in measurements:
+            ingredient = ingredient.replace(measure, '')
+        
+        # Remove numbers and common descriptors
+        import re
+        ingredient = re.sub(r'\d+', '', ingredient)
+        ingredient = re.sub(r'[\/\-,].*', '', ingredient)  # Remove everything after / - ,
+        
+        return ingredient.strip()
+    
+    def _estimate_total_amount(self, uses: List[Dict]) -> str:
+        """Estimate total amount needed for batch cooking"""
+        # Simple estimation - in practice, would need proper unit conversion
+        amounts = []
+        for use in uses:
+            amount_text = use['amount']
+            # Extract first number
+            import re
+            numbers = re.findall(r'\d+(?:\.\d+)?', amount_text)
+            if numbers:
+                amounts.append(float(numbers[0]))
+        
+        if amounts:
+            total = sum(amounts)
+            return f"~{total:.1f} units"
+        
+        return "Multiple servings"
+    
+    def _suggest_batch_size(self, ingredient: str, total_amount: str) -> str:
+        """Suggest optimal batch cooking size"""
+        base_suggestions = {
+            'rice': "Cook 2-3 cups dry rice",
+            'quinoa': "Cook 1.5-2 cups dry quinoa",
+            'chicken': "Cook 2-3 lbs at once",
+            'vegetables': "Prep 4-5 cups mixed vegetables"
+        }
+        
+        for key, suggestion in base_suggestions.items():
+            if key in ingredient.lower():
+                return suggestion
+        
+        return f"Prepare {total_amount}"    
+class MealPlanPersistence:
+    """Handle saving and loading meal plans"""
+    
+    def __init__(self, db_path: str = "meal_plans.db"):
+        self.db_path = db_path
+        self._setup_database()
+    
+    def _setup_database(self):
+        """Initialize meal plan storage database"""
+        with sqlite3.connect(self.db_path) as conn:
+            conn.executescript("""
+                CREATE TABLE IF NOT EXISTS user_profiles (
+                    id TEXT PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    profile_data TEXT NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+                
+                CREATE TABLE IF NOT EXISTS weekly_meal_plans (
+                    id TEXT PRIMARY KEY,
+                    user_id TEXT NOT NULL,
+                    start_date DATE NOT NULL,
+                    plan_data TEXT NOT NULL,
+                    status TEXT DEFAULT 'active',
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (user_id) REFERENCES user_profiles (id)
+                );
+                
+                CREATE TABLE IF NOT EXISTS meal_plan_feedback (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    plan_id TEXT NOT NULL,
+                    recipe_id TEXT NOT NULL,
+                    rating INTEGER CHECK (rating >= 1 AND rating <= 5),
+                    notes TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (plan_id) REFERENCES weekly_meal_plans (id)
+                );
+                
+                CREATE INDEX IF NOT EXISTS idx_meal_plans_user_date ON weekly_meal_plans(user_id, start_date);
+                CREATE INDEX IF NOT EXISTS idx_feedback_plan ON meal_plan_feedback(plan_id);
+            """)
+    
+    def save_user_profile(self, user_profile: UserProfile) -> str:
+        """Save user profile and return profile ID"""
+        profile_id = hashlib.md5(f"{user_profile.name}_{datetime.now()}".encode()).hexdigest()
+        
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute("""
+                INSERT OR REPLACE INTO user_profiles (id, name, profile_data, updated_at)
+                VALUES (?, ?, ?, ?)
+            """, (
+                profile_id,
+                user_profile.name,
+                json.dumps(asdict(user_profile), default=str),
+                datetime.now()
+            ))
+        
+        return profile_id
+    
+    def load_user_profile(self, profile_id: str) -> Optional[UserProfile]:
+        """Load user profile by ID"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT profile_data FROM user_profiles WHERE id = ?
+            """, (profile_id,))
+            
+            row = cursor.fetchone()
+            if row:
+                profile_data = json.loads(row[0])
+                # Convert back to UserProfile object
+                return self._dict_to_user_profile(profile_data)
+        
+        return None
+    
+    def save_meal_plan(self, meal_plan: WeeklyMealPlan, user_id: str) -> str:
+        """Save weekly meal plan and return plan ID"""
+        plan_id = hashlib.md5(f"{user_id}_{meal_plan.start_date}_{datetime.now()}".encode()).hexdigest()
+        
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute("""
+                INSERT OR REPLACE INTO weekly_meal_plans (id, user_id, start_date, plan_data)
+                VALUES (?, ?, ?, ?)
+            """, (
+                plan_id,
+                user_id,
+                meal_plan.start_date,
+                json.dumps(asdict(meal_plan), default=str)
+            ))
+        
+        return plan_id
+    
+    def load_meal_plan(self, plan_id: str) -> Optional[WeeklyMealPlan]:
+        """Load meal plan by ID"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT plan_data FROM weekly_meal_plans WHERE id = ?
+            """, (plan_id,))
+            
+            row = cursor.fetchone()
+            if row:
+                plan_data = json.loads(row[0])
+                return self._dict_to_meal_plan(plan_data)
+        
+        return None
+    
+    def get_user_meal_plans(self, user_id: str, limit: int = 10) -> List[Dict[str, Any]]:
+        """Get recent meal plans for a user"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT id, start_date, status, created_at 
+                FROM weekly_meal_plans 
+                WHERE user_id = ? 
+                ORDER BY start_date DESC 
+                LIMIT ?
+            """, (user_id, limit))
+            
+            return [
+                {
+                    'id': row[0],
+                    'start_date': row[1],
+                    'status': row[2],
+                    'created_at': row[3]
+                }
+                for row in cursor.fetchall()
+            ]
+    
+    def save_meal_feedback(self, plan_id: str, recipe_id: str, rating: int, notes: str = ""):
+        """Save user feedback on a meal"""
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute("""
+                INSERT INTO meal_plan_feedback (plan_id, recipe_id, rating, notes)
+                VALUES (?, ?, ?, ?)
+            """, (plan_id, recipe_id, rating, notes))
+    
+    def get_recipe_ratings(self, recipe_id: str) -> Dict[str, float]:
+        """Get rating statistics for a recipe"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT rating FROM meal_plan_feedback WHERE recipe_id = ?
+            """, (recipe_id,))
+            
+            ratings = [row[0] for row in cursor.fetchall()]
+            
+            if not ratings:
+                return {'average': 0.0, 'count': 0}
+            
+            return {
+                'average': statistics.mean(ratings),
+                'count': len(ratings),
+                'distribution': dict(Counter(ratings))
+            }
+    
+    def _dict_to_user_profile(self, data: Dict) -> UserProfile:
+        """Convert dictionary back to UserProfile object"""
+        # Handle enum conversions
+        if 'dietary_preferences' in data:
+            data['dietary_preferences'] = [
+                DietaryPreference(pref) for pref in data['dietary_preferences']
+            ]
+        
+        if 'cooking_skill' in data:
+            data['cooking_skill'] = CookingSkill(data['cooking_skill'])
+        
+        if 'nutritional_goals' in data:
+            data['nutritional_goals'] = NutritionalGoals(**data['nutritional_goals'])
+        
+        return UserProfile(**data)
+    
+    def _dict_to_meal_plan(self, data: Dict) -> WeeklyMealPlan:
+        """Convert dictionary back to WeeklyMealPlan object"""
+        # This would need proper reconstruction of all nested objects
+        # For now, returning a simplified version
+        meal_plan = WeeklyMealPlan(
+            start_date=datetime.strptime(data['start_date'], '%Y-%m-%d').date(),
+            user_profile=self._dict_to_user_profile(data['user_profile'])
+        )
+        
+        # Reconstruct days, meals, recipes, etc.
+        # This is complex and would need careful handling of all nested structures
+        
+        return meal_plan
+    
         
