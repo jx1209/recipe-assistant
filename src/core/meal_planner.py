@@ -1667,3 +1667,35 @@ class MealPlanOptimizer:
                         score += 6
         
         return score
+
+    def _identify_batch_cooking_opportunities(self, weekly_plan: WeeklyMealPlan) -> List[Dict[str, Any]]:
+        """Identify ingredients that can be batch cooked"""
+        ingredient_frequency = defaultdict(list)
+        
+        # Count ingredient usage across the week
+        for day_plan in weekly_plan.days.values():
+            for meal in day_plan.get_all_meals():
+                for ingredient in meal.recipe.ingredients:
+                    # Extract base ingredient name
+                    base_ingredient = self._extract_base_ingredient(ingredient)
+                    ingredient_frequency[base_ingredient].append({
+                        'meal': meal.recipe.name,
+                        'date': day_plan.date,
+                        'amount': ingredient
+                    })
+        
+        # Find ingredients used multiple times
+        batch_opportunities = []
+        for ingredient, uses in ingredient_frequency.items():
+            if len(uses) >= 2:  # Used in 2 or more meals
+                total_amount = self._estimate_total_amount(uses)
+                batch_opportunities.append({
+                    'ingredient': ingredient,
+                    'frequency': len(uses),
+                    'total_amount': total_amount,
+                    'uses': uses,
+                    'suggested_batch_size': self._suggest_batch_size(ingredient, total_amount)
+                })
+        
+        return sorted(batch_opportunities, key=lambda x: x['frequency'], reverse=True)
+    
