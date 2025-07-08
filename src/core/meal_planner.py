@@ -1158,38 +1158,6 @@ class MealPrepSuggestions:
         
         return sorted(batch_opportunities, key=lambda x: x['frequency'], reverse=True)
     
-    def _create_prep_schedule(self, weekly_plan: WeeklyMealPlan) -> Dict[str, List[str]]:
-        """Create a meal prep schedule"""
-        prep_schedule = {
-            'Sunday': [],
-            'Wednesday': []  # Mid-week prep
-        }
-        
-        # Sunday prep (for Monday-Wednesday)
-        sunday_tasks = []
-        for day_offset in range(3):  # Monday-Wednesday
-            current_date = weekly_plan.start_date + timedelta(days=day_offset)
-            if current_date in weekly_plan.days:
-                day_plan = weekly_plan.days[current_date]
-                for meal in day_plan.get_all_meals():
-                    if meal.recipe.total_time > 30:  # Prep longer recipes
-                        sunday_tasks.append(f"Prep {meal.recipe.name} for {current_date.strftime('%A')}")
-        
-        prep_schedule['Sunday'] = sunday_tasks[:5]  # Limit to 5 tasks
-        
-        # Wednesday prep (for Thursday-Sunday)
-        wednesday_tasks = []
-        for day_offset in range(3, 7):  # Thursday-Sunday
-            current_date = weekly_plan.start_date + timedelta(days=day_offset)
-            if current_date in weekly_plan.days:
-                day_plan = weekly_plan.days[current_date]
-                for meal in day_plan.get_all_meals():
-                    if meal.recipe.total_time > 30:
-                        wednesday_tasks.append(f"Prep {meal.recipe.name} for {current_date.strftime('%A')}")
-        
-        prep_schedule['Wednesday'] = wednesday_tasks[:3]  # Limit to 3 tasks
-        
-        return prep_schedule
     
     def _generate_storage_tips(self, weekly_plan: WeeklyMealPlan) -> List[str]:
         """Generate food storage tips"""
@@ -1224,8 +1192,7 @@ class MealPrepSuggestions:
         for day_plan in weekly_plan.days.values():
             for meal in day_plan.get_all_meals():
                 total_cooking_time += meal.recipe.total_time
-                
-                # Estimate savings from batch cooking
+
                 if meal.recipe.total_time > 20:
                     potential_savings += min(15, meal.recipe.total_time * 0.3)
         
@@ -1237,15 +1204,12 @@ class MealPrepSuggestions:
     
     def _extract_base_ingredient(self, ingredient_text: str) -> str:
         """Extract base ingredient name"""
-        # Remove measurements and descriptors
         ingredient = ingredient_text.lower()
-        
-        # Remove common measurements
+
         measurements = ['cup', 'tbsp', 'tsp', 'oz', 'lb', 'g', 'kg', 'ml', 'l']
         for measure in measurements:
             ingredient = ingredient.replace(measure, '')
         
-        # Remove numbers and common descriptors
         import re
         ingredient = re.sub(r'\d+', '', ingredient)
         ingredient = re.sub(r'[\/\-,].*', '', ingredient)  # Remove everything after / - ,
@@ -1254,11 +1218,9 @@ class MealPrepSuggestions:
     
     def _estimate_total_amount(self, uses: List[Dict]) -> str:
         """Estimate total amount needed for batch cooking"""
-        # Simple estimation - in practice, would need proper unit conversion
         amounts = []
         for use in uses:
             amount_text = use['amount']
-            # Extract first number
             import re
             numbers = re.findall(r'\d+(?:\.\d+)?', amount_text)
             if numbers:
@@ -1466,9 +1428,242 @@ class MealPlanPersistence:
             user_profile=self._dict_to_user_profile(data['user_profile'])
         )
         
-        # Reconstruct days, meals, recipes, etc.
-        # This is complex and would need careful handling of all nested structures
         
         return meal_plan
+
+class MealPlanOptimizer:
+    """Optimize meal plans for various criteria"""
     
+    def __init__(self, meal_planner: 'MealPlanGenerator'):
+        self.meal_planner = meal_planner
+    
+    def optimize_for_nutrition(self, weekly_plan: WeeklyMealPlan) -> WeeklyMealPlan:
+        """Optimize meal plan to better meet nutritional goals"""
+        nutrition_summary = weekly_plan.get_weekly_nutrition_summary()
+        adherence = nutrition_summary.get('goal_adherence', {})
         
+        # Find nutrients that need adjustment
+        improvements_needed = []
+        
+        for nutrient, adherence_percent in adherence.items():
+            if adherence_percent < 80:  # Under target
+                improvements_needed.append((nutrient, 'increase'))
+            elif adherence_percent > 120:  # Over target
+                improvements_needed.append((nutrient, 'decrease'))
+        
+        if not improvements_needed:
+            return weekly_plan
+        
+        # Try to swap recipes to improve nutrition
+        optimized_plan = self._create_plan_copy(weekly_plan)
+        
+        for day_date, day_plan in optimized_plan.days.items():
+            for meal_type in [MealType.BREAKFAST, MealType.LUNCH, MealType.DINNER]:
+                current_meal = self._get_meal_by_type(day_plan, meal_type)
+                
+                if current_meal:
+                    # Find better alternatives
+                    alternatives = self._find_nutritional_alternatives(
+                        current_meal, improvements_needed, weekly_plan.user_profile
+                    )
+                    
+                    if alternatives:
+                        best_alternative = alternatives[0]
+                        # Replace the meal
+                        self._replace_meal_in_day(day_plan, meal_type, best_alternative)
+        
+        return optimized_plan
+    
+    def optimize_for_cost(self, weekly_plan: WeeklyMealPlan, target_budget: float) -> WeeklyMealPlan:
+        """Optimize meal plan to meet budget constraints"""
+        if weekly_plan.total_cost <= target_budget:
+            return weekly_plan
+        
+        optimized_plan = self._create_plan_copy(weekly_plan)
+        cost_reduction_needed = weekly_plan.total_cost - target_budget
+        
+        # Sort meals by cost per serving (highest first)
+        all_meals = []
+        for day_date, day_plan in optimized_plan.days.items():
+            for meal in day_plan.get_all_meals():
+                all_meals.append((meal, day_date, day_plan))
+        
+        all_meals.sort(key=lambda x: x[0].recipe.cost_per_serving, reverse=True)
+        
+        # Replace expensive meals with cheaper alternatives
+        cost_saved = 0.0
+        for meal, day_date, day_plan in all_meals:
+            if cost_saved >= cost_reduction_needed:
+                break
+            
+            cheaper_alternatives = self._find_cost_alternatives(
+                meal, weekly_plan.user_profile
+            )
+            
+            if cheaper_alternatives:
+                alternative = cheaper_alternatives[0]
+                cost_difference = meal.recipe.cost_per_serving - alternative.recipe.cost_per_serving
+                
+                if cost_difference > 0:
+                    # Replace the meal
+                    self._replace_meal_in_day(day_plan, meal.meal_type, alternative)
+                    cost_saved += cost_difference * meal.servings
+        
+        # Recalculate total cost
+        optimized_plan.total_cost = self.meal_planner._calculate_total_cost(optimized_plan)
+        
+        return optimized_plan
+    
+    def optimize_for_time(self, weekly_plan: WeeklyMealPlan, max_daily_prep_time: int) -> WeeklyMealPlan:
+        """Optimize meal plan for time constraints"""
+        optimized_plan = self._create_plan_copy(weekly_plan)
+        
+        for day_date, day_plan in optimized_plan.days.items():
+            total_daily_time = sum(meal.recipe.total_time for meal in day_plan.get_all_meals())
+            
+            if total_daily_time <= max_daily_prep_time:
+                continue
+            
+            # Find time-efficient alternatives
+            all_meals = day_plan.get_all_meals()
+            all_meals.sort(key=lambda x: x.recipe.total_time, reverse=True)
+            
+            for meal in all_meals:
+                if total_daily_time <= max_daily_prep_time:
+                    break
+                
+                quicker_alternatives = self._find_time_alternatives(
+                    meal, weekly_plan.user_profile
+                )
+                
+                if quicker_alternatives:
+                    alternative = quicker_alternatives[0]
+                    time_saved = meal.recipe.total_time - alternative.recipe.total_time
+                    
+                    if time_saved > 0:
+                        self._replace_meal_in_day(day_plan, meal.meal_type, alternative)
+                        total_daily_time -= time_saved
+        
+        return optimized_plan
+    
+    def _create_plan_copy(self, weekly_plan: WeeklyMealPlan) -> WeeklyMealPlan:
+        """Create a deep copy of the meal plan"""
+        # In practice, implement proper deep copying
+        # For now, return the same plan (would need proper implementation)
+        return weekly_plan
+    
+    def _get_meal_by_type(self, day_plan: DayMealPlan, meal_type: MealType) -> Optional[Meal]:
+        """Get meal of specific type from day plan"""
+        if meal_type == MealType.BREAKFAST:
+            return day_plan.breakfast
+        elif meal_type == MealType.LUNCH:
+            return day_plan.lunch
+        elif meal_type == MealType.DINNER:
+            return day_plan.dinner
+        return None
+    
+    def _replace_meal_in_day(self, day_plan: DayMealPlan, meal_type: MealType, new_meal: Meal):
+        """Replace a meal in the day plan"""
+        if meal_type == MealType.BREAKFAST:
+            day_plan.breakfast = new_meal
+        elif meal_type == MealType.LUNCH:
+            day_plan.lunch = new_meal
+        elif meal_type == MealType.DINNER:
+            day_plan.dinner = new_meal
+    
+    def _find_nutritional_alternatives(self, current_meal: Meal, 
+                                     improvements: List[Tuple[str, str]], 
+                                     user_profile: UserProfile) -> List[Meal]:
+        """Find recipe alternatives that improve nutrition"""
+        candidates = self.meal_planner.recipe_db.get_recipes_by_meal_type(current_meal.meal_type)
+        
+        scored_alternatives = []
+        for recipe in candidates:
+            if recipe.id == current_meal.recipe.id:
+                continue
+            
+            score = self._score_nutritional_improvement(recipe, improvements)
+            if score > 0:
+                alternative_meal = Meal(
+                    recipe=recipe,
+                    meal_type=current_meal.meal_type,
+                    date=current_meal.date,
+                    servings=current_meal.servings
+                )
+                scored_alternatives.append((score, alternative_meal))
+        
+        scored_alternatives.sort(key=lambda x: x[0], reverse=True)
+        return [meal for score, meal in scored_alternatives[:3]]
+    
+    def _find_cost_alternatives(self, current_meal: Meal, user_profile: UserProfile) -> List[Meal]:
+        """Find cheaper recipe alternatives"""
+        candidates = self.meal_planner.recipe_db.get_recipes_by_meal_type(current_meal.meal_type)
+        
+        cheaper_alternatives = []
+        for recipe in candidates:
+            if (recipe.id != current_meal.recipe.id and 
+                recipe.cost_per_serving < current_meal.recipe.cost_per_serving):
+                
+                alternative_meal = Meal(
+                    recipe=recipe,
+                    meal_type=current_meal.meal_type,
+                    date=current_meal.date,
+                    servings=current_meal.servings
+                )
+                cheaper_alternatives.append(alternative_meal)
+        
+        # Sort by cost (cheapest first)
+        cheaper_alternatives.sort(key=lambda x: x.recipe.cost_per_serving)
+        return cheaper_alternatives[:3]
+    
+    def _find_time_alternatives(self, current_meal: Meal, user_profile: UserProfile) -> List[Meal]:
+        """Find quicker recipe alternatives"""
+        candidates = self.meal_planner.recipe_db.get_recipes_by_meal_type(current_meal.meal_type)
+        
+        quicker_alternatives = []
+        for recipe in candidates:
+            if (recipe.id != current_meal.recipe.id and 
+                recipe.total_time < current_meal.recipe.total_time):
+                
+                alternative_meal = Meal(
+                    recipe=recipe,
+                    meal_type=current_meal.meal_type,
+                    date=current_meal.date,
+                    servings=current_meal.servings
+                )
+                quicker_alternatives.append(alternative_meal)
+        
+        # Sort by time (quickest first)
+        quicker_alternatives.sort(key=lambda x: x.recipe.total_time)
+        return quicker_alternatives[:3]
+    
+    def _score_nutritional_improvement(self, recipe: Recipe, 
+                                     improvements: List[Tuple[str, str]]) -> float:
+        """Score how well a recipe addresses nutritional improvements"""
+        if not recipe.nutrition_per_serving:
+            return 0.0
+        
+        score = 0.0
+        nutrition = recipe.nutrition_per_serving
+        
+        for nutrient, direction in improvements:
+            if nutrient in nutrition:
+                value = nutrition[nutrient]
+                
+                if direction == 'increase':
+                    # Higher values are better
+                    if nutrient == 'protein_g' and value >= 20:
+                        score += 10
+                    elif nutrient == 'fiber_g' and value >= 5:
+                        score += 8
+                    elif nutrient == 'calories' and value >= 400:
+                        score += 5
+                
+                elif direction == 'decrease':
+                    # Lower values are better
+                    if nutrient == 'sodium_mg' and value <= 500:
+                        score += 8
+                    elif nutrient == 'fat_g' and value <= 10:
+                        score += 6
+        
+        return score
