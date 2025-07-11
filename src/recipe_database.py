@@ -18,7 +18,6 @@ from contextlib import contextmanager
 import shutil
 import uuid
 
-# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -63,7 +62,7 @@ class Recipe:
         if not self.updated_at:
             self.updated_at = self.created_at
         
-        # Validate required fields
+
         self._validate()
     
     def _validate(self):
@@ -120,8 +119,7 @@ class DatabaseCache:
         with self._lock:
             if key not in self._cache:
                 return None
-            
-            # Check if expired
+
             if time.time() - self._timestamps[key] > self.ttl_seconds:
                 del self._cache[key]
                 del self._timestamps[key]
@@ -132,7 +130,7 @@ class DatabaseCache:
     def set(self, key: str, value: Any):
         """Set item in cache"""
         with self._lock:
-            # Remove oldest items if cache is full
+
             if len(self._cache) >= self.max_size:
                 oldest_key = min(self._timestamps.keys(), key=lambda k: self._timestamps[k])
                 del self._cache[oldest_key]
@@ -376,3 +374,4 @@ class AdvancedRecipeDatabase:
             if 'cuisine' in recipe and cuisine.lower() in recipe['cuisine'].lower():
                 matching_recipes[recipe_id] = recipe
         return matching_recipes
+    

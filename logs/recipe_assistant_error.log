@@ -1,0 +1,2 @@
+2025-07-11 15:28:30 | ERROR    | api:34 | This is an error message
+2025-07-11 15:28:30 | CRITICAL | recipe_assistant.app:35 | This is a critical message
