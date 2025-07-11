@@ -1699,14 +1699,14 @@ class MealPlanOptimizer:
         
         return sorted(batch_opportunities, key=lambda x: x['frequency'], reverse=True)
 
+#Fix prep schedule and make it more versitile######
     def _create_prep_schedule(self, weekly_plan: WeeklyMealPlan) -> Dict[str, List[str]]:
         """Create a meal prep schedule"""
         prep_schedule = {
             'Sunday': [],
             'Wednesday': []  # Mid-week prep
         }
-        
-        # Sunday prep (for Monday-Wednesday)
+
         sunday_tasks = []
         for day_offset in range(3):  # Monday-Wednesday
             current_date = weekly_plan.start_date + timedelta(days=day_offset)
@@ -1717,8 +1717,7 @@ class MealPlanOptimizer:
                         sunday_tasks.append(f"Prep {meal.recipe.name} for {current_date.strftime('%A')}")
         
         prep_schedule['Sunday'] = sunday_tasks[:5]  # Limit to 5 tasks
-        
-        # Wednesday prep (for Thursday-Sunday)
+
         wednesday_tasks = []
         for day_offset in range(3, 7):  # Thursday-Sunday
             current_date = weekly_plan.start_date + timedelta(days=day_offset)
@@ -1741,8 +1740,7 @@ class MealPlanOptimizer:
             "Freeze portions in individual containers for easy reheating",
             "Label containers with contents and date prepared"
         ]
-        
-        # Add specific tips based on ingredients
+
         all_ingredients = set()
         for day_plan in weekly_plan.days.values():
             for meal in day_plan.get_all_meals():
@@ -1766,7 +1764,6 @@ class MealPlanOptimizer:
             for meal in day_plan.get_all_meals():
                 total_cooking_time += meal.recipe.total_time
                 
-                # Estimate savings from batch cooking
                 if meal.recipe.total_time > 20:
                     potential_savings += min(15, meal.recipe.total_time * 0.3)
         
@@ -1778,15 +1775,12 @@ class MealPlanOptimizer:
     
     def _extract_base_ingredient(self, ingredient_text: str) -> str:
         """Extract base ingredient name"""
-        # Remove measurements and descriptors
         ingredient = ingredient_text.lower()
-        
-        # Remove common measurements
+ 
         measurements = ['cup', 'tbsp', 'tsp', 'oz', 'lb', 'g', 'kg', 'ml', 'l']
         for measure in measurements:
             ingredient = ingredient.replace(measure, '')
-        
-        # Remove numbers and common descriptors
+
         import re
         ingredient = re.sub(r'\d+', '', ingredient)
         ingredient = re.sub(r'[\/\-,].*', '', ingredient)  # Remove everything after / - ,
@@ -1826,7 +1820,6 @@ class MealPlanOptimizer:
         
         return f"Prepare {total_amount}"
 
-# Enhanced SmartMealPlanner with all new features
 class SmartMealPlanner:
     """Main interface for the enhanced meal planning system"""
     
@@ -1980,3 +1973,122 @@ class SmartMealPlanner:
                 output += f"• {tip}\n"
         
         return output
+
+    def _format_shopping_list(self, shopping_list: Dict[str, float]) -> str:
+        """Format shopping list as readable text"""
+        output = "🛒 SHOPPING LIST\n" + "="*50 + "\n\n"
+        
+        categories = {
+            'Proteins': [],
+            'Vegetables': [],
+            'Fruits': [],
+            'Grains & Starches': [],
+            'Dairy': [],
+            'Pantry Items': []
+        }
+        
+        for item, quantity in shopping_list.items():
+            # Simple categorization
+            item_lower = item.lower()
+            if any(protein in item_lower for protein in ['chicken', 'beef', 'fish', 'salmon', 'eggs']):
+                categories['Proteins'].append(f"  • {quantity} {item}")
+            elif any(veg in item_lower for veg in ['tomato', 'onion', 'broccoli', 'spinach', 'carrot']):
+                categories['Vegetables'].append(f"  • {quantity} {item}")
+            elif any(fruit in item_lower for fruit in ['banana', 'apple', 'berries', 'lemon']):
+                categories['Fruits'].append(f"  • {quantity} {item}")
+            elif any(grain in item_lower for grain in ['rice', 'quinoa', 'oats', 'bread']):
+                categories['Grains & Starches'].append(f"  • {quantity} {item}")
+            elif any(dairy in item_lower for dairy in ['milk', 'cheese', 'yogurt']):
+                categories['Dairy'].append(f"  • {quantity} {item}")
+            else:
+                categories['Pantry Items'].append(f"  • {quantity} {item}")
+        
+        for category, items in categories.items():
+            if items:
+                output += f"{category}:\n"
+                output += "\n".join(items) + "\n\n"
+        
+        return output
+    
+    def _format_daily_schedule(self, weekly_plan: WeeklyMealPlan) -> str:
+        """Format daily meal schedule"""
+        output = f"📅 WEEKLY MEAL PLAN\n"
+        output += f"Week of {weekly_plan.start_date.strftime('%B %d, %Y')}\n"
+        output += "="*50 + "\n\n"
+        
+        for current_date in sorted(weekly_plan.days.keys()):
+            day_plan = weekly_plan.days[current_date]
+            output += f"{current_date.strftime('%A, %B %d')}\n"
+            output += "-" * 30 + "\n"
+            
+            if day_plan.breakfast:
+                output += f"🌅 Breakfast: {day_plan.breakfast.recipe.name}\n"
+                output += f"   Prep time: {day_plan.breakfast.recipe.total_time} min\n"
+            
+            if day_plan.lunch:
+                output += f"🌞 Lunch: {day_plan.lunch.recipe.name}\n"
+                output += f"   Prep time: {day_plan.lunch.recipe.total_time} min\n"
+            
+            if day_plan.dinner:
+                output += f"🌙 Dinner: {day_plan.dinner.recipe.name}\n"
+                output += f"   Prep time: {day_plan.dinner.recipe.total_time} min\n"
+            
+            if day_plan.snacks:
+                output += f"🍎 Snacks: {', '.join([snack.recipe.name for snack in day_plan.snacks])}\n"
+            
+            output += "\n"
+
+        nutrition_summary = weekly_plan.get_weekly_nutrition_summary()
+        avg_nutrition = nutrition_summary.get('average_daily', {})
+        
+        output += "📊 WEEKLY NUTRITION SUMMARY\n"
+        output += "="*30 + "\n"
+        output += f"Average daily calories: {avg_nutrition.get('calories', 0):.0f}\n"
+        output += f"Average daily protein: {avg_nutrition.get('protein_g', 0):.1f}g\n"
+        output += f"Total weekly cost: ${weekly_plan.total_cost:.2f}\n"
+        
+        return output
+
+
+#######TEST
+# Example usage and testing
+if __name__ == "__main__":
+    # Initialize the meal planner
+    planner = SmartMealPlanner()
+    
+    user = planner.create_user_profile(
+        name="John Doe",
+        age=30,
+        gender="male",
+        height_cm=175,
+        weight_kg=75,
+        activity_level="moderately_active",
+        dietary_preferences=[DietaryPreference.HIGH_PROTEIN],
+        allergies=["nuts"],
+        cooking_skill=CookingSkill.INTERMEDIATE,
+        max_prep_time=45,
+        budget_per_day=20.0
+    )
+    
+    # Generate a meal plan
+    meal_plan = planner.generate_meal_plan(
+        user_profile=user,
+        optimize_for="nutrition"
+    )
+
+    user_id = planner.persistence.save_user_profile(user)
+    plan_id = planner.save_meal_plan(meal_plan, user_id)
+    
+    # Get meal prep suggestions
+    prep_suggestions = planner.get_meal_prep_suggestions(meal_plan)
+    
+    # Export in different formats
+    daily_schedule = planner.export_meal_plan(meal_plan, 'daily_schedule')
+    shopping_list = planner.export_meal_plan(meal_plan, 'shopping_list')
+    prep_guide = planner.export_meal_plan(meal_plan, 'meal_prep')
+    
+    print("Meal plan generated successfully!")
+    print(f"Plan ID: {plan_id}")
+    print(f"User ID: {user_id}")
+    print("\nDaily Schedule:")
+    print(daily_schedule[:500] + "..." if len(daily_schedule) > 500 else daily_schedule)
