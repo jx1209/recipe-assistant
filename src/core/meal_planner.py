@@ -1698,4 +1698,285 @@ class MealPlanOptimizer:
                 })
         
         return sorted(batch_opportunities, key=lambda x: x['frequency'], reverse=True)
+
+    def _create_prep_schedule(self, weekly_plan: WeeklyMealPlan) -> Dict[str, List[str]]:
+        """Create a meal prep schedule"""
+        prep_schedule = {
+            'Sunday': [],
+            'Wednesday': []  # Mid-week prep
+        }
+        
+        # Sunday prep (for Monday-Wednesday)
+        sunday_tasks = []
+        for day_offset in range(3):  # Monday-Wednesday
+            current_date = weekly_plan.start_date + timedelta(days=day_offset)
+            if current_date in weekly_plan.days:
+                day_plan = weekly_plan.days[current_date]
+                for meal in day_plan.get_all_meals():
+                    if meal.recipe.total_time > 30:  # Prep longer recipes
+                        sunday_tasks.append(f"Prep {meal.recipe.name} for {current_date.strftime('%A')}")
+        
+        prep_schedule['Sunday'] = sunday_tasks[:5]  # Limit to 5 tasks
+        
+        # Wednesday prep (for Thursday-Sunday)
+        wednesday_tasks = []
+        for day_offset in range(3, 7):  # Thursday-Sunday
+            current_date = weekly_plan.start_date + timedelta(days=day_offset)
+            if current_date in weekly_plan.days:
+                day_plan = weekly_plan.days[current_date]
+                for meal in day_plan.get_all_meals():
+                    if meal.recipe.total_time > 30:
+                        wednesday_tasks.append(f"Prep {meal.recipe.name} for {current_date.strftime('%A')}")
+        
+        prep_schedule['Wednesday'] = wednesday_tasks[:3]  # Limit to 3 tasks
+        
+        return prep_schedule
     
+    def _generate_storage_tips(self, weekly_plan: WeeklyMealPlan) -> List[str]:
+        """Generate food storage tips"""
+        tips = [
+            "Store cooked grains in airtight containers for up to 5 days",
+            "Pre-cut vegetables can be stored for 3-4 days in the refrigerator",
+            "Cooked proteins should be consumed within 3-4 days",
+            "Freeze portions in individual containers for easy reheating",
+            "Label containers with contents and date prepared"
+        ]
+        
+        # Add specific tips based on ingredients
+        all_ingredients = set()
+        for day_plan in weekly_plan.days.values():
+            for meal in day_plan.get_all_meals():
+                for ingredient in meal.recipe.ingredients:
+                    all_ingredients.add(self._extract_base_ingredient(ingredient))
+        
+        if 'salad' in ' '.join(all_ingredients).lower():
+            tips.append("Store salad dressings separately to prevent wilting")
+        
+        if any('herb' in ing.lower() for ing in all_ingredients):
+            tips.append("Store fresh herbs wrapped in damp paper towels")
+        
+        return tips
+    
+    def _calculate_time_savings(self, weekly_plan: WeeklyMealPlan) -> Dict[str, int]:
+        """Calculate potential time savings from meal prep"""
+        total_cooking_time = 0
+        potential_savings = 0
+        
+        for day_plan in weekly_plan.days.values():
+            for meal in day_plan.get_all_meals():
+                total_cooking_time += meal.recipe.total_time
+                
+                # Estimate savings from batch cooking
+                if meal.recipe.total_time > 20:
+                    potential_savings += min(15, meal.recipe.total_time * 0.3)
+        
+        return {
+            'total_weekly_cooking_time': total_cooking_time,
+            'potential_savings': int(potential_savings),
+            'efficiency_improvement': f"{potential_savings/total_cooking_time*100:.1f}%"
+        }
+    
+    def _extract_base_ingredient(self, ingredient_text: str) -> str:
+        """Extract base ingredient name"""
+        # Remove measurements and descriptors
+        ingredient = ingredient_text.lower()
+        
+        # Remove common measurements
+        measurements = ['cup', 'tbsp', 'tsp', 'oz', 'lb', 'g', 'kg', 'ml', 'l']
+        for measure in measurements:
+            ingredient = ingredient.replace(measure, '')
+        
+        # Remove numbers and common descriptors
+        import re
+        ingredient = re.sub(r'\d+', '', ingredient)
+        ingredient = re.sub(r'[\/\-,].*', '', ingredient)  # Remove everything after / - ,
+        
+        return ingredient.strip()
+    
+    def _estimate_total_amount(self, uses: List[Dict]) -> str:
+        """Estimate total amount needed for batch cooking"""
+        # Simple estimation - in practice, would need proper unit conversion
+        amounts = []
+        for use in uses:
+            amount_text = use['amount']
+            # Extract first number
+            import re
+            numbers = re.findall(r'\d+(?:\.\d+)?', amount_text)
+            if numbers:
+                amounts.append(float(numbers[0]))
+        
+        if amounts:
+            total = sum(amounts)
+            return f"~{total:.1f} units"
+        
+        return "Multiple servings"
+    
+    def _suggest_batch_size(self, ingredient: str, total_amount: str) -> str:
+        """Suggest optimal batch cooking size"""
+        base_suggestions = {
+            'rice': "Cook 2-3 cups dry rice",
+            'quinoa': "Cook 1.5-2 cups dry quinoa",
+            'chicken': "Cook 2-3 lbs at once",
+            'vegetables': "Prep 4-5 cups mixed vegetables"
+        }
+        
+        for key, suggestion in base_suggestions.items():
+            if key in ingredient.lower():
+                return suggestion
+        
+        return f"Prepare {total_amount}"
+
+# Enhanced SmartMealPlanner with all new features
+class SmartMealPlanner:
+    """Main interface for the enhanced meal planning system"""
+    
+    def __init__(self, nutrition_calculator: Optional[NutritionCalculator] = None):
+        self.recipe_db = RecipeDatabase()
+        self.nutrition_calculator = nutrition_calculator or NutritionCalculator()
+        self.meal_planner = MealPlanGenerator(self.recipe_db, self.nutrition_calculator)
+        self.optimizer = MealPlanOptimizer(self.meal_planner)
+        self.persistence = MealPlanPersistence()
+        self.meal_prep = MealPrepSuggestions()
+    
+    def create_user_profile(self, **kwargs) -> UserProfile:
+        """Create a user profile for personalized meal planning"""
+        profile = UserProfile(**kwargs)
+        
+        tdee = profile.calculate_tdee()
+        profile.nutritional_goals.calories = tdee
+        
+
+        if profile.activity_level in ['very_active', 'extremely_active']:
+            profile.nutritional_goals.protein_g = profile.weight_kg * 2.0  # 2g per kg
+        else:
+            profile.nutritional_goals.protein_g = profile.weight_kg * 1.6  # 1.6g per kg
+        
+        return profile
+    
+    def generate_meal_plan(self, user_profile: UserProfile, 
+                          start_date: date = None,
+                          optimize_for: str = None,
+                          **preferences) -> WeeklyMealPlan:
+        """Generate and optionally optimize a meal plan"""
+        
+        weekly_plan = self.meal_planner.generate_weekly_plan(
+            user_profile, start_date, preferences
+        )
+        
+        if self.nutrition_calculator:
+            for day_plan in weekly_plan.days.values():
+                for meal in day_plan.get_all_meals():
+                    if not meal.recipe.nutrition_per_serving:
+                        nutrition = self.nutrition_calculator.calculate_recipe_nutrition(meal.recipe)
+                        meal.recipe.nutrition_per_serving = nutrition
+        
+        if optimize_for == 'nutrition':
+            weekly_plan = self.optimizer.optimize_for_nutrition(weekly_plan)
+        elif optimize_for == 'cost':
+            target_budget = preferences.get('target_budget', user_profile.budget_per_day * 7)
+            weekly_plan = self.optimizer.optimize_for_cost(weekly_plan, target_budget)
+        elif optimize_for == 'time':
+            max_time = preferences.get('max_daily_prep_time', user_profile.max_prep_time)
+            weekly_plan = self.optimizer.optimize_for_time(weekly_plan, max_time)
+        
+        return weekly_plan
+    
+    def save_meal_plan(self, meal_plan: WeeklyMealPlan, user_id: str) -> str:
+        """Save meal plan to database"""
+        return self.persistence.save_meal_plan(meal_plan, user_id)
+    
+    def load_meal_plan(self, plan_id: str) -> Optional[WeeklyMealPlan]:
+        """Load meal plan from database"""
+        return self.persistence.load_meal_plan(plan_id)
+    
+    def rate_meal(self, plan_id: str, recipe_id: str, rating: int, notes: str = ""):
+        """Rate a meal for future recommendations"""
+        self.persistence.save_meal_feedback(plan_id, recipe_id, rating, notes)
+    
+    def get_meal_prep_suggestions(self, weekly_plan: WeeklyMealPlan) -> Dict[str, Any]:
+        """Get meal prep suggestions for the plan"""
+        return self.meal_prep.generate_prep_plan(weekly_plan)
+    
+    def analyze_nutrition_trends(self, user_id: str, weeks: int = 4) -> Dict[str, Any]:
+        """Analyze nutrition trends over time"""
+        meal_plans = self.persistence.get_user_meal_plans(user_id, limit=weeks)
+        
+        if not meal_plans:
+            return {'error': 'No meal plans found'}
+
+        nutrition_data = []
+        for plan_info in meal_plans:
+            plan = self.persistence.load_meal_plan(plan_info['id'])
+            if plan:
+                summary = plan.get_weekly_nutrition_summary()
+                nutrition_data.append({
+                    'week': plan.start_date,
+                    'nutrition': summary.get('average_daily', {}),
+                    'adherence': summary.get('goal_adherence', {})
+                })
+        
+        trends = {}
+        for nutrient in ['calories', 'protein_g', 'carbs_g', 'fat_g']:
+            values = [data['nutrition'].get(nutrient, 0) for data in nutrition_data]
+            if len(values) >= 2:
+                trend = 'increasing' if values[-1] > values[0] else 'decreasing'
+                change = ((values[-1] - values[0]) / values[0] * 100) if values[0] > 0 else 0
+                trends[nutrient] = {
+                    'trend': trend,
+                    'change_percent': round(change, 1),
+                    'values': values
+                }
+        
+        return {
+            'trends': trends,
+            'weeks_analyzed': len(nutrition_data),
+            'latest_adherence': nutrition_data[-1]['adherence'] if nutrition_data else {}
+        }
+    
+    def export_meal_plan(self, weekly_plan: WeeklyMealPlan, format_type: str = 'json') -> str:
+        """Export meal plan in various formats"""
+        if format_type == 'json':
+            return json.dumps(asdict(weekly_plan), indent=2, default=str)
+        elif format_type == 'shopping_list':
+            return self._format_shopping_list(weekly_plan.shopping_list)
+        elif format_type == 'daily_schedule':
+            return self._format_daily_schedule(weekly_plan)
+        elif format_type == 'meal_prep':
+            prep_suggestions = self.get_meal_prep_suggestions(weekly_plan)
+            return self._format_meal_prep_guide(prep_suggestions)
+        else:
+            raise ValueError(f"Unsupported format: {format_type}")
+
+    def _format_meal_prep_guide(self, prep_suggestions: Dict[str, Any]) -> str:
+        """Format meal prep suggestions"""
+        output = "🥘 MEAL PREP GUIDE\n" + "="*50 + "\n\n"
+        
+        batch_cooking = prep_suggestions.get('batch_cooking', [])
+        if batch_cooking:
+            output += "🍳 BATCH COOKING OPPORTUNITIES\n" + "-"*30 + "\n"
+            for item in batch_cooking[:5]:  # Top 5
+                output += f"• {item['ingredient'].title()}\n"
+                output += f"  Used {item['frequency']} times this week\n"
+                output += f"  Suggestion: {item['suggested_batch_size']}\n\n"
+        
+        prep_schedule = prep_suggestions.get('prep_schedule', {})
+        for day, tasks in prep_schedule.items():
+            if tasks:
+                output += f"📅 {day.upper()} PREP\n" + "-"*20 + "\n"
+                for task in tasks:
+                    output += f"• {task}\n"
+                output += "\n"
+        
+        time_savings = prep_suggestions.get('time_savings', {})
+        output += "⏰ TIME SAVINGS\n" + "-"*20 + "\n"
+        output += f"Total weekly cooking time: {time_savings.get('total_weekly_cooking_time', 0)} minutes\n"
+        output += f"Potential time saved: {time_savings.get('potential_savings', 0)} minutes\n"
+        output += f"Efficiency improvement: {time_savings.get('efficiency_improvement', '0%')}\n\n"
+
+        storage_tips = prep_suggestions.get('storage_tips', [])
+        if storage_tips:
+            output += "💡 STORAGE TIPS\n" + "-"*20 + "\n"
+            for tip in storage_tips:
+                output += f"• {tip}\n"
+        
+        return output
