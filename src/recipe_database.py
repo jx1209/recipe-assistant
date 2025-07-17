@@ -18,6 +18,7 @@ from contextlib import contextmanager
 import shutil
 import uuid
 
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -47,6 +48,51 @@ class Recipe:
     equipment: List[str] = None
     cost_estimate: str = ""
     
+class RecipeDatabase:
+    def __init__(self, db_path: str = "data/recipes.json"):
+        self.db_path = Path(db_path)
+        self.db_path.parent.mkdir(parents=True, exist_ok=True)
+
+        if not self.db_path.exists():
+            self._save_db({})
+        self._db = self._load_db()
+
+    def _load_db(self) -> Dict[str, Dict]:
+        try:
+            with open(self.db_path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except json.JSONDecodeError:
+            logger.warning("Corrupted JSON detected. Starting fresh.")
+            return {}
+
+    def _save_db(self, data: Dict[str, Dict]):
+        with open(self.db_path, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
+
+    def get_all_recipes(self) -> Dict[str, Dict]:
+        return self._db
+
+    def get_recipe(self, recipe_id: str) -> Optional[Dict]:
+        return self._db.get(recipe_id)
+
+    def add_recipe(self, recipe_id: str, recipe_data: Dict) -> bool:
+        if recipe_id in self._db:
+            return False
+        self._db[recipe_id] = recipe_data
+        self._save_db(self._db)
+        return True
+
+    def search_recipes_by_cuisine(self, cuisine: str) -> Dict[str, Dict]:
+        return {rid: data for rid, data in self._db.items()
+                if data.get("cuisine", "").lower() == cuisine.lower()}
+
+    def search_recipes_by_tag(self, tag: str) -> Dict[str, Dict]:
+        return {
+            rid: data
+            for rid, data in self._db.items()
+            if tag.lower() in [t.lower() for t in data.get("tags", [])]
+        }
+
     def __post_init__(self):
         """Initialize default values and validate data"""
         if self.tags is None:
@@ -62,7 +108,6 @@ class Recipe:
         if not self.updated_at:
             self.updated_at = self.created_at
         
-
         self._validate()
     
     def _validate(self):

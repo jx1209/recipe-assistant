@@ -9,7 +9,9 @@ import logging
 from typing import List, Dict, Tuple, Optional, Any
 from dataclasses import dataclass
 from datetime import datetime
+from functools import lru_cache
 import re
+
 
 try:
     from .recipe_database import AdvancedRecipeDatabase
@@ -121,7 +123,7 @@ class SmartIngredientMatcher:
     
     def analyze_ingredients(self, user_ingredients: List[str]) -> Dict[str, Any]:
         """Analyze user ingredients and provide insights"""
-        cleaned_ingredients = [self._clean_ingredient(ing) for ing in user_ingredients]
+        cleaned_ingredients = [SmartIngredientMatcher._clean_ingredient(ing) for ing in user_ingredients]
         
         analysis = {
             "original_ingredients": user_ingredients,
@@ -163,6 +165,8 @@ class SmartIngredientMatcher:
         
         return analysis
     
+    @staticmethod
+    @lru_cache(maxsize=500)
     def _clean_ingredient(self, ingredient: str) -> str:
         """Clean and normalize ingredient names"""
         # Remove measurements and quantities
@@ -181,18 +185,17 @@ class SmartIngredientMatcher:
     
     def _ingredient_similarity(self, ingredient1: str, ingredient2: str) -> float:
         """Calculate similarity between ingredients using enhanced matching"""
-        # Direct match
+        from difflib import SequenceMatcher
         if ingredient1.lower() == ingredient2.lower():
-            return 1.0
-        
-        # Check synonyms
-        for base_ingredient, synonyms in self.ingredient_synonyms.items():
-            if (ingredient1.lower() in synonyms and ingredient2.lower() == base_ingredient) or \
-               (ingredient2.lower() in synonyms and ingredient1.lower() == base_ingredient):
+                return 1.0
+
+        for base, synonyms in self.ingredient_synonyms.items():
+            if (ingredient1.lower() in synonyms and ingredient2.lower() == base) or \
+            (ingredient2.lower() in synonyms and ingredient1.lower() == base):
                 return 0.95
-        
-        # Use existing similarity function
-        return calculate_ingredient_similarity(ingredient1, ingredient2)
+
+        # Use fuzzy similarity
+        return SequenceMatcher(None, ingredient1.lower(), ingredient2.lower()).ratio()        
     
     def find_matching_recipes(self, 
                             user_ingredients: List[str],
@@ -206,7 +209,7 @@ class SmartIngredientMatcher:
         used_apis = []
         
         # Clean user ingredients
-        cleaned_ingredients = [self._clean_ingredient(ing) for ing in user_ingredients]
+        cleaned_ingredients = [SmartIngredientMatcher._clean_ingredient(ing) for ing in user_ingredients]
         
         # Search local database first
         local_matches = self._search_local_recipes(cleaned_ingredients, min_match_percentage)
@@ -243,6 +246,7 @@ class SmartIngredientMatcher:
     def _search_local_recipes(self, ingredients: List[str], min_match: float) -> List[IngredientMatch]:
         """Search local recipe database"""
         matches = []
+        skipped = 0
         local_recipes = self.database.get_all_recipes()
         
         for recipe_id, recipe_data in local_recipes.items():
@@ -262,7 +266,10 @@ class SmartIngredientMatcher:
                     confidence_score=confidence
                 )
                 matches.append(match)
+            else:
+                skipped += 1
         
+        logger.info(f"Local search: {len(matches)} matches found, {skipped} skipped below threshold ({min_match})")
         return matches
     
     def _search_online_recipes(self, ingredients: List[str], max_results: int) -> Tuple[List[IngredientMatch], List[str]]:
@@ -307,6 +314,8 @@ class SmartIngredientMatcher:
     
     def _calculate_recipe_match(self, user_ingredients: List[str], recipe_data: Dict) -> Dict:
         """Calculate how well recipe matches user ingredients"""
+        pantry_items = ['salt', 'sugar', 'oil', 'water', 'pepper']
+        
         recipe_ingredients = recipe_data.get('ingredients', [])
         
         matching_ingredients = []
@@ -314,7 +323,7 @@ class SmartIngredientMatcher:
         total_similarity_score = 0
         
         for recipe_ingredient in recipe_ingredients:
-            cleaned_recipe_ingredient = self._clean_ingredient(recipe_ingredient)
+            cleaned_recipe_ingredient = SmartIngredientMatcher._clean_ingredient(recipe_ingredient)
             best_match_score = 0
             matched = False
             
@@ -326,15 +335,18 @@ class SmartIngredientMatcher:
                 
                 if similarity >= 0.7:
                     matched = True
+
+        # Down-weight common pantry items
+        if any(p in cleaned_recipe_ingredient for p in pantry_items):
+            best_match_score *= 0.5
+
+        total_similarity_score += best_match_score
             
-            total_similarity_score += best_match_score
-            
-            if matched:
+        if matched:
                 matching_ingredients.append(recipe_ingredient)
-            else:
+        else:
                 missing_ingredients.append(recipe_ingredient)
         
-        # Calculate match percentage
         if len(recipe_ingredients) > 0:
             match_percentage = (total_similarity_score / len(recipe_ingredients)) * 100
         else:
@@ -345,7 +357,7 @@ class SmartIngredientMatcher:
             'matching_ingredients': matching_ingredients,
             'missing_ingredients': missing_ingredients,
             'total_similarity': total_similarity_score
-        }
+    }
     
     def _calculate_confidence_score(self, match_result: Dict, source: str, api: str = None) -> float:
         """Calculate confidence score for the match"""
@@ -384,7 +396,7 @@ class SmartIngredientMatcher:
         # Count frequently missing ingredients across matches
         for match in matches:
             for missing_ing in match.missing_ingredients:
-                cleaned_missing = self._clean_ingredient(missing_ing)
+                cleaned_missing = SmartIngredientMatcher._clean_ingredient(missing_ing)
                 missing_ingredient_counts[cleaned_missing] = missing_ingredient_counts.get(cleaned_missing, 0) + 1
         
         # Sort by frequency and suggest top missing ingredients
