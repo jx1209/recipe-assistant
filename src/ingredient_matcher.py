@@ -15,7 +15,7 @@ import re
 
 try:
     from .recipe_database import AdvancedRecipeDatabase
-    from .utils import (
+    from .utils.util_funcs import (
         calculate_ingredient_similarity,
         parse_ingredient_list,
         print_header,
@@ -24,7 +24,7 @@ try:
     )
 except ImportError:
     from recipe_database import AdvancedRecipeDatabase
-    from utils import (
+    from src.utils.util_funcs import (
         calculate_ingredient_similarity,
         parse_ingredient_list,
         print_header,

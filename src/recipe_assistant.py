@@ -5,7 +5,7 @@ A command-line recipe matching system using modular design
 
 try:
     from .recipe_database import RecipeDatabase
-    from .utils import (
+    from .utils.util_funcs import (
         calculate_ingredient_similarity, 
         format_recipe_summary, 
         print_separator, 
@@ -16,7 +16,7 @@ try:
 except ImportError:
     # Fallback for when running directly (not as module)
     from recipe_database import RecipeDatabase
-    from utils import (
+    from src.utils.util_funcs import (
         calculate_ingredient_similarity, 
         format_recipe_summary, 
         print_separator, 

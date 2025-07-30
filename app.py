@@ -11,7 +11,7 @@ from logging.handlers import RotatingFileHandler
 
 from src.recipe_assistant import RecipeAssistant
 from src.recipe_database import RecipeDatabase
-from src.utils import parse_ingredient_list, validate_recipe_data
+from src.utils.util_funcs import parse_ingredient_list, validate_recipe_data
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
