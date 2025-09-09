@@ -1,4 +1,10 @@
-export function RecipeCard({ title, description, tags }: any) {
+type RecipeCardProps = {
+  title: string;
+  description: string;
+  tags: string[];
+};
+
+export function RecipeCard({ title, description, tags }: RecipeCardProps) {
   return (
     <div className="bg-white rounded-xl shadow p-4 hover:shadow-lg transition">
       <h2 className="text-xl font-semibold">{title}</h2>
@@ -14,5 +20,5 @@ export function RecipeCard({ title, description, tags }: any) {
         ))}
       </div>
     </div>
-  )
+  );
 }
