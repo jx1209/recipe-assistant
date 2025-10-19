@@ -21,12 +21,23 @@ wheels/
 .installed.cfg
 *.egg
 
-# IDE
-.vscode/
-.idea/
-.cursor/
+# IDE and editor files
 *.swp
 *.swo
+*~
+.project
+.classpath
+.settings/
+workspace.xml
+.idea/
+.vs/
+.fleet/
+.history/
+*.code-workspace
+*.sublime-*
+# Editor-specific hidden folders
+.[a-z]*[a-z]/
+.[A-Z]*[A-Z]/
 
 # OS
 .DS_Store
@@ -66,6 +77,5 @@ htmlcov/
 *.cover
 
 # Project specific
-.cursor/
 TODO.md
 notes.md
