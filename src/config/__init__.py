@@ -1,14 +1,7 @@
 """
-Configuration management for Recipe Assistant
-Provides centralized access to all configuration utilities
+Configuration package
 """
 
-from .logging_config import setup_logging, get_logger, log_performance, RequestLogger
+from .settings import Settings, get_settings
 
-__all__ = [
-    "setup_logging",
-    "get_logger", 
-    "log_performance",
-    "RequestLogger",
-    "init_app_config",
-]
+__all__ = ['Settings', 'get_settings']

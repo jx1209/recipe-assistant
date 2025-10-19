@@ -14,20 +14,20 @@ from .pantry import PantryItemCreate, PantryItemUpdate, PantryItemResponse
 from .nutrition import NutritionInfo, NutritionGoals, NutritionAnalysis
 
 __all__ = [
-    # User models
+    #user models
     'UserCreate', 'UserLogin', 'UserProfile', 'UserUpdate', 'UserPreferences',
-    # Recipe models
+    #recipe models
     'RecipeCreate', 'RecipeUpdate', 'RecipeResponse', 'RecipeSearch',
     'RecipeIngredient', 'RecipeInstruction', 'RecipeNutrition',
-    # Meal plan models
+    #meal plan models
     'MealPlanCreate', 'MealPlanUpdate', 'MealPlanResponse', 'DayMeal',
-    # Shopping list models
+    #shopping list models
     'ShoppingListCreate', 'ShoppingListUpdate', 'ShoppingListResponse', 'ShoppingItem',
-    # Rating models
+    #rating models
     'RatingCreate', 'RatingResponse',
-    # Pantry models
+    #pantry models
     'PantryItemCreate', 'PantryItemUpdate', 'PantryItemResponse',
-    # Nutrition models
+    #nutrition models
     'NutritionInfo', 'NutritionGoals', 'NutritionAnalysis',
 ]
 
