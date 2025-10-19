@@ -1,4 +1,4 @@
-# Python
+#python
 __pycache__/
 *.pyc
 *.py[cod]
@@ -21,7 +21,7 @@ wheels/
 .installed.cfg
 *.egg
 
-# IDE and editor files
+#IDE and editor files
 *.swp
 *.swo
 *~
@@ -35,47 +35,49 @@ workspace.xml
 .history/
 *.code-workspace
 *.sublime-*
-# Editor-specific hidden folders
+#editor-specific hidden folders
 .[a-z]*[a-z]/
 .[A-Z]*[A-Z]/
 
-# OS
+#os
 .DS_Store
 Thumbs.db
 
-# Environment and secrets
+#environment and secrets
 .env
 .env.local
 .env.*.local
 *.key
 *.pem
 
-# Database
+#database
 *.db
 *.db-journal
 *.db-wal
 *.db-shm
 data/*.db
 
-# Logs
+#logs
 logs/
 *.log
 
-# Uploads
+#uploads
 data/uploads/
 uploads/
 
-# Virtual Environment
+#virtual environment
 venv/
 env/
 ENV/
 
-# Testing
+#testing
 .pytest_cache/
 .coverage
 htmlcov/
 *.cover
 
-# Project specific
+#project specific
 TODO.md
 notes.md
+README_PHASE2.md
+QUICK_START.md
