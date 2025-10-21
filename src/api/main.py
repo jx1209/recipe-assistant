@@ -1,167 +1,189 @@
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
-from typing import List, Optional, Dict, Any
-import uuid
+"""
+recipe assistant fastapi application
+main application entry point with complete setup
+"""
 
-# ---- import your modules
-from src.core.recipe_importer import import_from_url, import_from_text, import_from_pdf  # adapt names
-from src.core.search_engine import search_recipes
-from src.core.shopping_list_generator import generate_shopping_list
-from src.core.substitution_engine import suggest_substitutions
-from src.core.recommendation_engine import RecommendationEngine
-# from src.core.planner import build_meal_plan  # if you have it
+from fastapi import FastAPI, Request, status
+from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
+from contextlib import asynccontextmanager
+import logging
+import sys
+from pathlib import Path
 
-app = FastAPI(title="Recipe Assistant API", version="0.1.0")
+#add src to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-# ---- CORS for your Next.js dev server
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+from src.config.settings import get_settings
+from src.api.middleware import setup_middleware, setup_exception_handlers, limiter
+from src.api.routes.users import router as auth_router, user_router
+from src.database import get_db
+
+#get settings
+settings = get_settings()
+
+#configure logging
+logging.basicConfig(
+    level=getattr(logging, settings.LOG_LEVEL),
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout),
+        logging.FileHandler(settings.LOG_FILE)
+    ]
 )
 
-# ---- Pydantic models
-class Ingredient(BaseModel):
-    name: str
-    quantity: Optional[float] = None
-    unit: Optional[str] = None
-    notes: Optional[str] = None
+logger = logging.getLogger(__name__)
 
-class Recipe(BaseModel):
-    id: str
-    title: str
-    ingredients: List[Ingredient] = []
-    steps: List[str] = []
-    tags: List[str] = []
-    metadata: Dict[str, Any] = {}
 
-class ImportUrlRequest(BaseModel):
-    url: str
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    lifespan context manager for startup and shutdown events
+    """
+    #startup
+    logger.info(f"starting {settings.APP_NAME} v{settings.APP_VERSION}")
+    logger.info(f"environment: {settings.ENVIRONMENT}")
+    logger.info(f"debug mode: {settings.DEBUG}")
+    
+    #ensure logs directory exists
+    Path("logs").mkdir(exist_ok=True)
+    
+    #initialize database
+    try:
+        db = get_db(settings.DATABASE_URL)
+        stats = db.get_stats()
+        logger.info(f"database initialized: {stats}")
+    except Exception as e:
+        logger.error(f"failed to initialize database: {e}")
+        raise
+    
+    logger.info("application startup complete")
+    
+    yield
+    
+    #shutdown
+    logger.info("shutting down application...")
+    
+    #close database connections
+    try:
+        db = get_db(settings.DATABASE_URL)
+        db.close()
+        logger.info("database connections closed")
+    except Exception as e:
+        logger.error(f"error closing database: {e}")
+    
+    logger.info("application shutdown complete")
 
-class ImportTextRequest(BaseModel):
-    text: str
-    title: Optional[str] = None
 
-class SearchRequest(BaseModel):
-    q: str
-    limit: int = 20
+#create fastapi application
+app = FastAPI(
+    title=settings.APP_NAME,
+    version=settings.APP_VERSION,
+    description="a comprehensive recipe management system with ai-powered features",
+    docs_url="/docs" if not settings.is_production() else None,
+    redoc_url="/redoc" if not settings.is_production() else None,
+    openapi_url="/openapi.json" if not settings.is_production() else None,
+    lifespan=lifespan
+)
 
-class PlannerRequest(BaseModel):
-    start_date: str                 # "2025-09-10"
-    days: int = 7
-    dietary_prefs: List[str] = []   # ["vegetarian","low-carb"]
-    exclude_ingredients: List[str] = []
-    target_calories: Optional[int] = None
+#add rate limiter state
+app.state.limiter = limiter
 
-class ShoppingListRequest(BaseModel):
-    recipe_ids: List[str]
-    pantry_items: List[str] = []
-    group_by_aisle: bool = True
-    include_substitutions: bool = False
+#setup middleware
+setup_middleware(app)
+setup_exception_handlers(app)
 
-class SubstitutionRequest(BaseModel):
-    ingredient: str
-    diet: Optional[str] = None
+#include routers
+app.include_router(auth_router, prefix=settings.API_V1_PREFIX)
+app.include_router(user_router, prefix=settings.API_V1_PREFIX)
 
-# In-memory "db" for demo; replace with your real store later
-_FAKE_DB: Dict[str, Recipe] = {}
-_reco_engine = RecommendationEngine()  # if it needs config, pass it here
-
-# ---- Health
-@app.get("/api/health")
-def health():
-    return {"ok": True}
-
-# ---- Import endpoints
-@app.post("/api/import/url", response_model=Recipe)
-def import_url(body: ImportUrlRequest):
-    parsed = import_from_url(body.url)  # returns your internal recipe dict
-    if not parsed:
-        raise HTTPException(400, "Failed to import from URL")
-    recipe_id = parsed.get("id") or str(uuid.uuid4())
-    recipe = Recipe(id=recipe_id, **parsed | {"id": recipe_id})
-    _FAKE_DB[recipe.id] = recipe
-    return recipe
-
-@app.post("/api/import/text", response_model=Recipe)
-def import_text(body: ImportTextRequest):
-    parsed = import_from_text(body.text, title=body.title)
-    if not parsed:
-        raise HTTPException(400, "Failed to import from text")
-    recipe_id = parsed.get("id") or str(uuid.uuid4())
-    recipe = Recipe(id=recipe_id, **parsed | {"id": recipe_id})
-    _FAKE_DB[recipe.id] = recipe
-    return recipe
-
-@app.post("/api/import/pdf", response_model=Recipe)
-async def import_pdf(file: UploadFile = File(...), title: str = Form(None)):
-    pdf_bytes = await file.read()
-    parsed = import_from_pdf(pdf_bytes, filename=file.filename, title=title)
-    if not parsed:
-        raise HTTPException(400, "Failed to import from PDF")
-    recipe_id = parsed.get("id") or str(uuid.uuid4())
-    recipe = Recipe(id=recipe_id, **parsed | {"id": recipe_id})
-    _FAKE_DB[recipe.id] = recipe
-    return recipe
-
-# ---- Recipe detail
-@app.get("/api/recipe/{recipe_id}", response_model=Recipe)
-def get_recipe(recipe_id: str):
-    r = _FAKE_DB.get(recipe_id)
-    if not r:
-        raise HTTPException(404, "Recipe not found")
-    return r
-
-# ---- Search
-@app.get("/api/search", response_model=List[Recipe])
-def search(q: str, limit: int = 20):
-    # bridge to your search_engine
-    results = search_recipes(q=q, limit=limit)  # expect list of dicts
-    recipes = []
-    for item in results:
-        rid = item.get("id") or str(uuid.uuid4())
-        recipes.append(Recipe(id=rid, **item | {"id": rid}))
-        _FAKE_DB[rid] = recipes[-1]
-    return recipes
-
-# ---- Planner (stub if you haven’t built it yet)
-@app.post("/api/planner")
-def planner(body: PlannerRequest):
-    # plan = build_meal_plan(...)
-    # return plan
+#root endpoint
+@app.get("/", tags=["root"])
+async def root():
+    """root endpoint - api information"""
     return {
-        "start_date": body.start_date,
-        "days": body.days,
-        "meals": [],  # fill with your structure
-        "notes": "Hook up src/core/planner.build_meal_plan(...) here"
+        "name": settings.APP_NAME,
+        "version": settings.APP_VERSION,
+        "status": "operational",
+        "environment": settings.ENVIRONMENT,
+        "docs": "/docs" if not settings.is_production() else "disabled",
     }
 
-# ---- Shopping list
-@app.post("/api/shopping-list")
-def shopping_list(body: ShoppingListRequest):
-    # get recipes from your real DB; here we reference _FAKE_DB
-    selected = []
-    for rid in body.recipe_ids:
-        if rid in _FAKE_DB:
-            selected.append(_FAKE_DB[rid].model_dump())
-    result = generate_shopping_list(
-        recipes=selected,
-        pantry_items=set(body.pantry_items),
-        group_by_aisle=body.group_by_aisle,
-        include_substitutions=body.include_substitutions,
+
+#health check endpoint
+@app.get("/health", tags=["health"])
+async def health_check():
+    """health check endpoint"""
+    try:
+        #check database connection
+        db = get_db(settings.DATABASE_URL)
+        stats = db.get_stats()
+        
+        return {
+            "status": "healthy",
+            "database": "connected",
+            "stats": stats
+        }
+    except Exception as e:
+        logger.error(f"health check failed: {e}")
+        return JSONResponse(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            content={
+                "status": "unhealthy",
+                "error": str(e)
+            }
+        )
+
+
+#database stats endpoint (protected in production)
+@app.get("/stats", tags=["admin"])
+async def get_stats():
+    """get database statistics"""
+    if settings.is_production():
+        return JSONResponse(
+            status_code=status.HTTP_403_FORBIDDEN,
+            content={"detail": "not available in production"}
+        )
+    
+    try:
+        db = get_db(settings.DATABASE_URL)
+        stats = db.get_stats()
+        return stats
+    except Exception as e:
+        logger.error(f"error getting stats: {e}")
+        raise
+
+
+#custom validation error handler
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """custom handler for validation errors"""
+    errors = []
+    for error in exc.errors():
+        errors.append({
+            "field": " -> ".join(str(loc) for loc in error["loc"]),
+            "message": error["msg"],
+            "type": error["type"]
+        })
+    
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content={
+            "detail": "validation error",
+            "errors": errors
+        }
     )
-    return result
 
-# ---- Substitutions quick endpoint
-@app.post("/api/substitutions")
-def substitutions(body: SubstitutionRequest):
-    return {"suggestions": suggest_substitutions(body.ingredient, diet=body.diet)}
 
-# ---- Simple recommendations (optional)
-@app.get("/api/recommendations", response_model=List[str])
-def recommendations(user_id: Optional[str] = None, limit: int = 5):
-    recs = _reco_engine.recommend_for_user(user_id=user_id, k=limit)
-    return recs
+if __name__ == "__main__":
+    import uvicorn
+    
+    uvicorn.run(
+        "src.api.main:app",
+        host=settings.HOST,
+        port=settings.PORT,
+        reload=settings.DEBUG,
+        log_level=settings.LOG_LEVEL.lower(),
+        access_log=True
+    )
+
