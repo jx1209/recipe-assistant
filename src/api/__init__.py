@@ -1,4 +1,4 @@
 #src/api/__init__.py
-from .main_v2 import app
+from .main import app
 
 __all__ = ["app"]
