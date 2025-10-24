@@ -1,18 +1,32 @@
 """
-Rating and review related Pydantic models
+rating and review related pydantic models
 """
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional
 from datetime import datetime
 
 
 class RatingCreate(BaseModel):
-    """Model for creating/updating a rating"""
+    """model for creating/updating a rating"""
     rating: int = Field(..., ge=1, le=5)
-    review: Optional[str] = Field(None, max_length=2000)
+    review_text: Optional[str] = Field(None, max_length=2000)
     
-    @validator('review')
+    @field_validator('review_text')
+    @classmethod
+    def review_not_just_whitespace(cls, v):
+        if v and not v.strip():
+            return None
+        return v.strip() if v else None
+
+
+class RatingUpdate(BaseModel):
+    """model for updating a rating"""
+    rating: Optional[int] = Field(None, ge=1, le=5)
+    review_text: Optional[str] = Field(None, max_length=2000)
+    
+    @field_validator('review_text')
+    @classmethod
     def review_not_just_whitespace(cls, v):
         if v and not v.strip():
             return None
@@ -20,31 +34,29 @@ class RatingCreate(BaseModel):
 
 
 class RatingResponse(BaseModel):
-    """Model for rating response"""
+    """model for rating response"""
     id: int
     recipe_id: int
     user_id: int
     user_name: Optional[str]
     rating: int
-    review: Optional[str]
+    review_text: Optional[str]
     created_at: datetime
     updated_at: datetime
     
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
-class RatingStatistics(BaseModel):
-    """Model for recipe rating statistics"""
+class RatingSummary(BaseModel):
+    """model for recipe rating summary"""
     recipe_id: int
     average_rating: float = 0.0
     total_count: int = 0
-    five_star: int = 0
-    four_star: int = 0
-    three_star: int = 0
-    two_star: int = 0
-    one_star: int = 0
+    five_star_count: int = 0
+    four_star_count: int = 0
+    three_star_count: int = 0
+    two_star_count: int = 0
+    one_star_count: int = 0
     
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
