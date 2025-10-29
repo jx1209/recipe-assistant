@@ -15,7 +15,7 @@ from src.models.user import UserResponse
 from src.services.recipe_scraper import RecipeScraperService
 from src.services.recipe_manager import RecipeManager
 from src.database import get_db
-from src.auth.dependencies import get_current_user
+from src.auth.dependencies import get_current_user, get_current_user_optional
 from src.config.settings import get_settings
 
 logger = logging.getLogger(__name__)
@@ -101,7 +101,7 @@ async def create_recipe(
 @router.get("/recipes/{recipe_id}", response_model=RecipeResponse)
 async def get_recipe(
     recipe_id: int,
-    current_user: Optional[UserResponse] = Depends(get_current_user),
+    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
     recipe_manager: RecipeManager = Depends(get_recipe_manager)
 ):
     """
@@ -215,7 +215,7 @@ async def search_recipes(
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
     sort_by: str = Query("created_at", regex="^(created_at|rating|time|title)$"),
-    current_user: Optional[UserResponse] = Depends(get_current_user),
+    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
     recipe_manager: RecipeManager = Depends(get_recipe_manager)
 ):
     """
