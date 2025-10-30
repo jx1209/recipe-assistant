@@ -19,6 +19,8 @@ from src.api.middleware import setup_middleware, setup_exception_handlers, limit
 from src.api.routes.users import router as auth_router, user_router
 from src.api.routes.recipes import router as recipe_router
 from src.api.routes.ratings import router as rating_router
+from src.api.routes.meal_plans import router as meal_plan_router
+from src.api.routes.shopping_lists import router as shopping_list_router
 from src.database import get_db
 
 #get settings
@@ -100,6 +102,8 @@ app.include_router(auth_router, prefix=settings.API_V1_PREFIX)
 app.include_router(user_router, prefix=settings.API_V1_PREFIX)
 app.include_router(recipe_router, prefix=settings.API_V1_PREFIX)
 app.include_router(rating_router, prefix=settings.API_V1_PREFIX)
+app.include_router(meal_plan_router, prefix=settings.API_V1_PREFIX)
+app.include_router(shopping_list_router, prefix=settings.API_V1_PREFIX)
 
 #root endpoint
 @app.get("/", tags=["root"])

@@ -1,5 +1,5 @@
 """
-Shopping list related Pydantic models
+shopping list related pydantic models
 """
 
 from pydantic import BaseModel, Field, field_validator, model_validator
@@ -8,7 +8,7 @@ from datetime import datetime
 
 
 class ShoppingItem(BaseModel):
-    """Model for a shopping list item"""
+    """model for a shopping list item"""
     ingredient: str = Field(..., min_length=1, max_length=200)
     quantity: Optional[float] = Field(None, ge=0)
     unit: Optional[str] = Field(None, max_length=50)
@@ -20,12 +20,12 @@ class ShoppingItem(BaseModel):
     @classmethod
     def ingredient_not_empty(cls, v):
         if not v or not v.strip():
-            raise ValueError('Ingredient name cannot be empty')
+            raise ValueError('ingredient name cannot be empty')
         return v.strip().lower()
 
 
 class ShoppingListCreate(BaseModel):
-    """Model for creating a shopping list"""
+    """model for creating a shopping list"""
     name: str = Field(..., min_length=1, max_length=100)
     recipe_ids: List[int] = Field(default_factory=list)
     meal_plan_id: Optional[int] = None
@@ -37,25 +37,25 @@ class ShoppingListCreate(BaseModel):
     @classmethod
     def name_not_empty(cls, v):
         if not v or not v.strip():
-            raise ValueError('Name cannot be empty')
+            raise ValueError('name cannot be empty')
         return v.strip()
     
     @model_validator(mode='after')
     def must_have_source(self):
-        # At least one of recipe_ids, meal_plan_id, or custom_items must be provided
+        #at least one of recipe_ids, meal_plan_id, or custom_items must be provided
         if not self.recipe_ids and not self.meal_plan_id and not self.custom_items:
-            raise ValueError('Must provide recipe_ids, meal_plan_id, or custom_items')
+            raise ValueError('must provide recipe_ids, meal_plan_id, or custom_items')
         return self
 
 
 class ShoppingListUpdate(BaseModel):
-    """Model for updating a shopping list"""
+    """model for updating a shopping list"""
     name: Optional[str] = Field(None, min_length=1, max_length=100)
     items: List[ShoppingItem]
 
 
 class ShoppingListResponse(BaseModel):
-    """Model for shopping list response"""
+    """model for shopping list response"""
     id: int
     user_id: int
     name: str
@@ -64,23 +64,21 @@ class ShoppingListResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     
-    # Computed fields
+    #computed fields
     total_items: int = 0
     checked_items: int = 0
     categories: List[str] = Field(default_factory=list)
     
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
 class ShoppingListSummary(BaseModel):
-    """Model for shopping list summary/card"""
+    """model for shopping list summary/card"""
     id: int
     name: str
     total_items: int
     checked_items: int
     created_at: datetime
     
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
