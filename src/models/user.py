@@ -39,7 +39,8 @@ class UserProfile(BaseModel):
     email: EmailStr
     full_name: Optional[str]
     created_at: datetime
-    is_verified: bool
+    is_active: bool = True
+    is_verified: bool = False
     preferences: Dict[str, Any] = Field(default_factory=dict)
     
     class Config:
@@ -83,3 +84,6 @@ class DietaryRestriction(BaseModel):
     class Config:
         from_attributes = True
 
+
+# Alias for compatibility with new route modules
+UserResponse = UserProfile

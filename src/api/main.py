@@ -21,6 +21,9 @@ from src.api.routes.recipes import router as recipe_router
 from src.api.routes.ratings import router as rating_router
 from src.api.routes.meal_plans import router as meal_plan_router
 from src.api.routes.shopping_lists import router as shopping_list_router
+from src.api.routes.nutrition import router as nutrition_router
+from src.api.routes.substitutions import router as substitution_router
+from src.api.routes.recommendations import router as recommendation_router
 from src.database import get_db
 
 #get settings
@@ -84,9 +87,9 @@ app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
     description="a comprehensive recipe management system with ai-powered features",
-    docs_url="/docs" if not settings.is_production() else None,
-    redoc_url="/redoc" if not settings.is_production() else None,
-    openapi_url="/openapi.json" if not settings.is_production() else None,
+    docs_url="/docs" if not settings.is_production else None,
+    redoc_url="/redoc" if not settings.is_production else None,
+    openapi_url="/openapi.json" if not settings.is_production else None,
     lifespan=lifespan
 )
 
@@ -104,6 +107,9 @@ app.include_router(recipe_router, prefix=settings.API_V1_PREFIX)
 app.include_router(rating_router, prefix=settings.API_V1_PREFIX)
 app.include_router(meal_plan_router, prefix=settings.API_V1_PREFIX)
 app.include_router(shopping_list_router, prefix=settings.API_V1_PREFIX)
+app.include_router(nutrition_router, prefix=settings.API_V1_PREFIX)
+app.include_router(substitution_router, prefix=settings.API_V1_PREFIX)
+app.include_router(recommendation_router, prefix=settings.API_V1_PREFIX)
 
 #root endpoint
 @app.get("/", tags=["root"])
@@ -114,7 +120,7 @@ async def root():
         "version": settings.APP_VERSION,
         "status": "operational",
         "environment": settings.ENVIRONMENT,
-        "docs": "/docs" if not settings.is_production() else "disabled",
+        "docs": "/docs" if not settings.is_production else "disabled",
     }
 
 
@@ -147,7 +153,7 @@ async def health_check():
 @app.get("/stats", tags=["admin"])
 async def get_stats():
     """get database statistics"""
-    if settings.is_production():
+    if settings.is_production:
         return JSONResponse(
             status_code=status.HTTP_403_FORBIDDEN,
             content={"detail": "not available in production"}
