@@ -24,7 +24,9 @@ from src.api.routes.shopping_lists import router as shopping_list_router
 from src.api.routes.nutrition import router as nutrition_router
 from src.api.routes.substitutions import router as substitution_router
 from src.api.routes.recommendations import router as recommendation_router
+from src.api.routes.ai import router as ai_router
 from src.database import get_db
+from src.database.migration_runner import MigrationRunner
 
 #get settings
 settings = get_settings()
@@ -60,6 +62,12 @@ async def lifespan(app: FastAPI):
         db = get_db(settings.DATABASE_URL)
         stats = db.get_stats()
         logger.info(f"database initialized: {stats}")
+        
+        #run pending migrations
+        migration_runner = MigrationRunner(db.conn)
+        migrations_applied = migration_runner.run_pending_migrations()
+        if migrations_applied > 0:
+            logger.info(f"applied {migrations_applied} database migration(s)")
     except Exception as e:
         logger.error(f"failed to initialize database: {e}")
         raise
@@ -110,6 +118,7 @@ app.include_router(shopping_list_router, prefix=settings.API_V1_PREFIX)
 app.include_router(nutrition_router, prefix=settings.API_V1_PREFIX)
 app.include_router(substitution_router, prefix=settings.API_V1_PREFIX)
 app.include_router(recommendation_router, prefix=settings.API_V1_PREFIX)
+app.include_router(ai_router, prefix=settings.API_V1_PREFIX)
 
 #root endpoint
 @app.get("/", tags=["root"])

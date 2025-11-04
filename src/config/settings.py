@@ -51,6 +51,10 @@ class Settings(BaseSettings):
         default_factory=lambda: secrets.token_urlsafe(32),
         env="SESSION_SECRET_KEY"
     )
+    ENCRYPTION_KEY: str = Field(
+        default_factory=lambda: secrets.token_urlsafe(32),
+        env="ENCRYPTION_KEY"
+    )
     
     # CORS
     CORS_ORIGINS: List[str] = Field(
@@ -79,10 +83,16 @@ class Settings(BaseSettings):
     
     # AI Integration
     ANTHROPIC_API_KEY: Optional[str] = Field(default=None, env="ANTHROPIC_API_KEY")
+    CLAUDE_API_KEY: Optional[str] = Field(default=None, env="CLAUDE_API_KEY")  # Alias for ANTHROPIC_API_KEY
     OPENAI_API_KEY: Optional[str] = Field(default=None, env="OPENAI_API_KEY")
     AI_ENABLED: bool = Field(default=False, env="AI_ENABLED")
     AI_MAX_TOKENS: int = 2000
     AI_TEMPERATURE: float = 0.7
+    
+    @property
+    def claude_api_key(self) -> Optional[str]:
+        """Get Claude API key (checks both CLAUDE_API_KEY and ANTHROPIC_API_KEY)"""
+        return self.CLAUDE_API_KEY or self.ANTHROPIC_API_KEY
     
     # Recipe Scraping
     SCRAPING_TIMEOUT_SECONDS: int = 30
