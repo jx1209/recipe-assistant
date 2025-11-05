@@ -159,6 +159,102 @@ class ClaudeClient:
             logger.error(f"Error suggesting substitutions: {e}")
             raise
     
+    async def modify_recipe(
+        self,
+        recipe_data: Dict[str, Any],
+        modification_type: str,
+        specific_request: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Modify an existing recipe based on requirements
+        
+        Args:
+            recipe_data: Original recipe data
+            modification_type: Type of modification (healthier, vegetarian, vegan, gluten-free, etc)
+            specific_request: Optional specific modification request
+            
+        Returns:
+            Modified recipe data
+        """
+        try:
+            prompt = self._build_recipe_modification_prompt(
+                recipe_data, modification_type, specific_request
+            )
+            
+            response = await self._make_api_call(prompt, max_tokens=2000)
+            modified_recipe = self._parse_recipe_response(response)
+            
+            return modified_recipe
+            
+        except Exception as e:
+            logger.error(f"Error modifying recipe: {e}")
+            raise
+    
+    async def generate_meal_plan(
+        self,
+        days: int,
+        dietary_restrictions: Optional[List[str]] = None,
+        cuisine_preferences: Optional[List[str]] = None,
+        calories_target: Optional[int] = None,
+        meal_types: Optional[List[str]] = None
+    ) -> Dict[str, Any]:
+        """
+        Generate an AI-powered meal plan
+        
+        Args:
+            days: Number of days to plan for
+            dietary_restrictions: Optional dietary restrictions
+            cuisine_preferences: Optional cuisine preferences
+            calories_target: Optional daily calorie target
+            meal_types: Which meals to include (breakfast, lunch, dinner, snacks)
+            
+        Returns:
+            Meal plan data with recipes for each day
+        """
+        try:
+            prompt = self._build_meal_plan_prompt(
+                days, dietary_restrictions, cuisine_preferences, 
+                calories_target, meal_types
+            )
+            
+            response = await self._make_api_call(prompt, max_tokens=3000)
+            meal_plan = self._parse_meal_plan_response(response)
+            
+            return meal_plan
+            
+        except Exception as e:
+            logger.error(f"Error generating meal plan: {e}")
+            raise
+    
+    async def suggest_ingredient_pairings(
+        self,
+        main_ingredient: str,
+        cuisine: Optional[str] = None,
+        meal_type: Optional[str] = None
+    ) -> List[Dict[str, str]]:
+        """
+        Suggest ingredients that pair well with a main ingredient
+        
+        Args:
+            main_ingredient: The main ingredient
+            cuisine: Optional cuisine context
+            meal_type: Optional meal type
+            
+        Returns:
+            List of ingredient pairings with explanations
+        """
+        try:
+            prompt = self._build_pairing_prompt(main_ingredient, cuisine, meal_type)
+            response = await self._make_api_call(prompt, max_tokens=800)
+            
+            pairings = self._parse_pairing_response(response)
+            
+            return pairings
+            
+        except Exception as e:
+            logger.error(f"Error suggesting pairings: {e}")
+            raise
+    
     async def _make_api_call(
         self,
         prompt: str,
