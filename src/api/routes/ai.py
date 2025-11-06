@@ -53,6 +53,31 @@ class SubstitutionRequest(BaseModel):
     recipe_context: Optional[str] = None
 
 
+class RecipeModificationRequest(BaseModel):
+    """Request model for recipe modification"""
+    recipe_id: int
+    modification_type: str = Field(..., description="Type: healthier, vegetarian, vegan, gluten-free, low-carb, etc")
+    specific_request: Optional[str] = Field(None, description="Specific modification instructions")
+    save_as_new: bool = Field(default=True, description="Save as new recipe vs replace original")
+
+
+class MealPlanGenerateRequest(BaseModel):
+    """Request model for AI meal plan generation"""
+    days: int = Field(default=7, ge=1, le=14, description="Number of days (1-14)")
+    dietary_restrictions: Optional[List[str]] = None
+    cuisine_preferences: Optional[List[str]] = None
+    calories_target: Optional[int] = Field(None, ge=1000, le=5000)
+    meal_types: Optional[List[str]] = Field(default=['breakfast', 'lunch', 'dinner'])
+    save_plan: bool = Field(default=False, description="Save generated plan to database")
+
+
+class IngredientPairingRequest(BaseModel):
+    """Request model for ingredient pairing suggestions"""
+    main_ingredient: str = Field(..., min_length=2)
+    cuisine: Optional[str] = None
+    meal_type: Optional[str] = None
+
+
 def get_claude_client(current_user: UserResponse = Depends(get_current_user)) -> ClaudeClient:
     """
     Get Claude client for current user
@@ -358,5 +383,262 @@ async def get_api_key_status(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error checking API key status"
+        )
+
+
+# Phase 5 Part 2/3 - Advanced AI Features
+
+@router.post("/ai/modify-recipe", response_model=Dict[str, Any])
+async def modify_recipe(
+    request: RecipeModificationRequest,
+    current_user: UserResponse = Depends(get_current_user),
+    claude_client: ClaudeClient = Depends(get_claude_client),
+    recipe_manager: RecipeManager = Depends(get_recipe_manager)
+):
+    """
+    Modify an existing recipe with AI
+    Can make it healthier, vegetarian, vegan, gluten-free, low-carb, etc.
+    """
+    try:
+        # Get original recipe
+        original_recipe = await recipe_manager.get_recipe(request.recipe_id, current_user.id)
+        
+        if not original_recipe:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Recipe not found"
+            )
+        
+        # Prepare recipe data for modification
+        recipe_data = {
+            'title': original_recipe.title,
+            'ingredients': [ing.model_dump() for ing in original_recipe.ingredients],
+            'instructions': original_recipe.instructions,
+            'servings': original_recipe.servings
+        }
+        
+        # Modify recipe using Claude
+        modified_recipe_data = await claude_client.modify_recipe(
+            recipe_data=recipe_data,
+            modification_type=request.modification_type,
+            specific_request=request.specific_request
+        )
+        
+        logger.info(f"Modified recipe {request.recipe_id} for user {current_user.id}: {request.modification_type}")
+        
+        # Save as new recipe if requested
+        saved_recipe = None
+        if request.save_as_new:
+            try:
+                from src.models.recipe import RecipeCreate
+                recipe_create = RecipeCreate(**modified_recipe_data)
+                saved_recipe = await recipe_manager.create_recipe(recipe_create, current_user.id)
+                
+                return {
+                    "original_recipe_id": request.recipe_id,
+                    "modified_recipe": modified_recipe_data,
+                    "saved": True,
+                    "new_recipe_id": saved_recipe.id,
+                    "message": f"Recipe modified to be {request.modification_type} and saved"
+                }
+            except Exception as e:
+                logger.error(f"Error saving modified recipe: {e}")
+                return {
+                    "original_recipe_id": request.recipe_id,
+                    "modified_recipe": modified_recipe_data,
+                    "saved": False,
+                    "message": "Recipe modified but could not be saved"
+                }
+        
+        return {
+            "original_recipe_id": request.recipe_id,
+            "modified_recipe": modified_recipe_data,
+            "saved": False,
+            "message": f"Recipe modified to be {request.modification_type}"
+        }
+        
+    except HTTPException:
+        raise
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        logger.error(f"Error modifying recipe: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error modifying recipe with AI"
+        )
+
+
+@router.post("/ai/generate-meal-plan", response_model=Dict[str, Any])
+async def generate_ai_meal_plan(
+    request: MealPlanGenerateRequest,
+    current_user: UserResponse = Depends(get_current_user),
+    claude_client: ClaudeClient = Depends(get_claude_client)
+):
+    """
+    Generate an AI-powered meal plan
+    Creates complete recipes for each meal of each day
+    """
+    try:
+        # Get user's dietary preferences if not provided
+        db = get_db(settings.DATABASE_URL)
+        cursor = db.conn.cursor()
+        cursor.execute(
+            "SELECT dietary_restrictions, favorite_cuisines FROM users WHERE id = ?",
+            (current_user.id,)
+        )
+        row = cursor.fetchone()
+        
+        dietary_restrictions = request.dietary_restrictions
+        cuisine_preferences = request.cuisine_preferences
+        
+        # Use user preferences if not explicitly provided
+        if row and not dietary_restrictions:
+            import json
+            user_restrictions = json.loads(row['dietary_restrictions'] or '[]')
+            dietary_restrictions = user_restrictions if user_restrictions else None
+        
+        if row and not cuisine_preferences:
+            import json
+            user_cuisines = json.loads(row['favorite_cuisines'] or '[]')
+            cuisine_preferences = user_cuisines if user_cuisines else None
+        
+        # Generate meal plan using Claude
+        meal_plan_data = await claude_client.generate_meal_plan(
+            days=request.days,
+            dietary_restrictions=dietary_restrictions,
+            cuisine_preferences=cuisine_preferences,
+            calories_target=request.calories_target,
+            meal_types=request.meal_types
+        )
+        
+        logger.info(f"Generated {request.days}-day meal plan for user {current_user.id}")
+        
+        # Save meal plan if requested
+        if request.save_plan:
+            try:
+                from datetime import date, timedelta
+                from src.models.meal_plan import MealPlanCreate, DayPlan, DayMeal
+                from src.services.meal_planner import MealPlannerService
+                from src.models.recipe import RecipeCreate
+                
+                meal_planner = MealPlannerService(db.conn)
+                recipe_manager = RecipeManager(db.conn)
+                
+                # First, save all recipes and collect recipe IDs
+                start_date = date.today()
+                days_data = []
+                
+                for day_index, day_info in enumerate(meal_plan_data.get('days', [])):
+                    day_date = start_date + timedelta(days=day_index)
+                    meals = day_info.get('meals', {})
+                    
+                    day_meals = {}
+                    
+                    # Save each meal as a recipe
+                    for meal_type in ['breakfast', 'lunch', 'dinner']:
+                        if meal_type in meals and meal_type in request.meal_types:
+                            meal_recipe_data = meals[meal_type]
+                            
+                            # Create and save recipe
+                            try:
+                                recipe_create = RecipeCreate(**meal_recipe_data)
+                                saved_meal = await recipe_manager.create_recipe(recipe_create, current_user.id)
+                                
+                                day_meals[meal_type] = DayMeal(
+                                    meal_type=meal_type,
+                                    recipe_id=saved_meal.id,
+                                    servings=meal_recipe_data.get('servings', 1.0)
+                                )
+                            except Exception as e:
+                                logger.warning(f"Could not save {meal_type} recipe: {e}")
+                    
+                    if day_meals:
+                        days_data.append(DayPlan(
+                            date=day_date,
+                            breakfast=day_meals.get('breakfast'),
+                            lunch=day_meals.get('lunch'),
+                            dinner=day_meals.get('dinner')
+                        ))
+                
+                # Create meal plan
+                if days_data:
+                    meal_plan_create = MealPlanCreate(
+                        name=meal_plan_data.get('meal_plan_name', f"{request.days}-Day AI Plan"),
+                        start_date=start_date,
+                        end_date=start_date + timedelta(days=request.days - 1),
+                        days=days_data
+                    )
+                    
+                    saved_plan = await meal_planner.create_meal_plan(meal_plan_create, current_user.id)
+                    
+                    return {
+                        "meal_plan": meal_plan_data,
+                        "saved": True,
+                        "meal_plan_id": saved_plan.id,
+                        "message": "Meal plan generated and saved successfully"
+                    }
+            
+            except Exception as e:
+                logger.error(f"Error saving meal plan: {e}")
+                return {
+                    "meal_plan": meal_plan_data,
+                    "saved": False,
+                    "message": "Meal plan generated but could not be saved"
+                }
+        
+        return {
+            "meal_plan": meal_plan_data,
+            "saved": False,
+            "message": "Meal plan generated successfully"
+        }
+        
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        logger.error(f"Error generating meal plan: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error generating meal plan with AI"
+        )
+
+
+@router.post("/ai/ingredient-pairings", response_model=Dict[str, Any])
+async def get_ingredient_pairings(
+    request: IngredientPairingRequest,
+    current_user: UserResponse = Depends(get_current_user),
+    claude_client: ClaudeClient = Depends(get_claude_client)
+):
+    """
+    Get AI-powered ingredient pairing suggestions
+    Suggests ingredients that complement the main ingredient
+    """
+    try:
+        pairings = await claude_client.suggest_ingredient_pairings(
+            main_ingredient=request.main_ingredient,
+            cuisine=request.cuisine,
+            meal_type=request.meal_type
+        )
+        
+        logger.info(f"Suggested pairings for '{request.main_ingredient}' for user {current_user.id}")
+        
+        return {
+            "main_ingredient": request.main_ingredient,
+            "pairings": pairings,
+            "cuisine": request.cuisine,
+            "meal_type": request.meal_type
+        }
+        
+    except Exception as e:
+        logger.error(f"Error suggesting pairings: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error generating ingredient pairings"
         )
 

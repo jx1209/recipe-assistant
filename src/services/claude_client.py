@@ -495,6 +495,216 @@ etc."""
                     substitutions.append(cleaned)
         
         return substitutions if substitutions else [response.strip()]
+    
+    def _build_recipe_modification_prompt(
+        self,
+        recipe_data: Dict[str, Any],
+        modification_type: str,
+        specific_request: Optional[str]
+    ) -> str:
+        """Build prompt for recipe modification"""
+        
+        # Extract key recipe info
+        title = recipe_data.get('title', 'Recipe')
+        ingredients = recipe_data.get('ingredients', [])
+        instructions = recipe_data.get('instructions', [])
+        
+        prompt = f"""You are a professional chef. Modify the following recipe to be {modification_type}.
+
+Original Recipe: {title}
+
+Ingredients:
+"""
+        
+        for ing in ingredients:
+            if isinstance(ing, dict):
+                ing_str = f"- {ing.get('quantity', '')} {ing.get('unit', '')} {ing.get('name', '')}".strip()
+            else:
+                ing_str = f"- {ing}"
+            prompt += ing_str + "\n"
+        
+        prompt += "\nInstructions:\n"
+        for i, instruction in enumerate(instructions, 1):
+            prompt += f"{i}. {instruction}\n"
+        
+        prompt += f"\nModification: Make this recipe {modification_type}"
+        
+        if specific_request:
+            prompt += f"\nSpecific request: {specific_request}"
+        
+        prompt += """
+
+Please provide the modified recipe in the following JSON format:
+{
+  "title": "Modified Recipe Name",
+  "description": "Brief description including what was changed",
+  "ingredients": [
+    {"name": "ingredient", "quantity": 1, "unit": "cup", "notes": "optional notes"}
+  ],
+  "instructions": [
+    "Step 1 instruction",
+    "Step 2 instruction"
+  ],
+  "prep_time_minutes": 15,
+  "cook_time_minutes": 30,
+  "servings": 4,
+  "difficulty": "Easy/Medium/Hard",
+  "cuisine": "cuisine type",
+  "tags": ["tag1", "tag2"],
+  "modifications_made": "Summary of changes made to original recipe"
+}
+
+Be specific about what changes were made and why."""
+        
+        return prompt
+    
+    def _build_meal_plan_prompt(
+        self,
+        days: int,
+        dietary_restrictions: Optional[List[str]],
+        cuisine_preferences: Optional[List[str]],
+        calories_target: Optional[int],
+        meal_types: Optional[List[str]]
+    ) -> str:
+        """Build prompt for meal plan generation"""
+        
+        meal_types = meal_types or ['breakfast', 'lunch', 'dinner']
+        
+        prompt = f"""You are a professional meal planning assistant. Create a {days}-day meal plan.
+
+Requirements:
+- Days: {days}
+- Meals per day: {', '.join(meal_types)}
+"""
+        
+        if dietary_restrictions:
+            prompt += f"- Dietary restrictions: {', '.join(dietary_restrictions)}\n"
+        
+        if cuisine_preferences:
+            prompt += f"- Cuisine preferences: {', '.join(cuisine_preferences)}\n"
+        
+        if calories_target:
+            prompt += f"- Target daily calories: approximately {calories_target}\n"
+        
+        prompt += """
+Please create a diverse, balanced meal plan. For each meal, provide a complete recipe.
+
+Format your response as a JSON object with this structure:
+{
+  "meal_plan_name": "Week of [theme]",
+  "days": [
+    {
+      "day": 1,
+      "date_label": "Monday",
+      "meals": {
+        "breakfast": {
+          "title": "Recipe Name",
+          "ingredients": [{"name": "ingredient", "quantity": 1, "unit": "cup"}],
+          "instructions": ["Step 1", "Step 2"],
+          "prep_time_minutes": 10,
+          "cook_time_minutes": 15,
+          "servings": 2,
+          "estimated_calories": 400
+        },
+        "lunch": {...},
+        "dinner": {...}
+      }
+    }
+  ],
+  "shopping_list_summary": ["ingredient 1", "ingredient 2"],
+  "nutrition_summary": {
+    "avg_daily_calories": 2000,
+    "notes": "Balanced nutrition notes"
+  }
+}
+
+Ensure variety across days and balanced nutrition."""
+        
+        return prompt
+    
+    def _build_pairing_prompt(
+        self,
+        main_ingredient: str,
+        cuisine: Optional[str],
+        meal_type: Optional[str]
+    ) -> str:
+        """Build prompt for ingredient pairing suggestions"""
+        
+        prompt = f"""You are a culinary expert. Suggest ingredients that pair well with: {main_ingredient}
+
+"""
+        
+        if cuisine:
+            prompt += f"Cuisine style: {cuisine}\n"
+        
+        if meal_type:
+            prompt += f"Meal type: {meal_type}\n"
+        
+        prompt += """
+Provide 5-7 ingredient pairing suggestions that complement the main ingredient.
+
+Format your response as a numbered list:
+1. Ingredient Name - Why it pairs well and suggested preparation
+2. Ingredient Name - Why it pairs well and suggested preparation
+etc.
+
+Focus on both flavor compatibility and textural contrast."""
+        
+        return prompt
+    
+    def _parse_meal_plan_response(self, response: str) -> Dict[str, Any]:
+        """Parse meal plan response from Claude"""
+        
+        try:
+            # Extract JSON from response
+            if "```json" in response:
+                json_start = response.find("```json") + 7
+                json_end = response.find("```", json_start)
+                json_str = response[json_start:json_end].strip()
+            elif "```" in response:
+                json_start = response.find("```") + 3
+                json_end = response.find("```", json_start)
+                json_str = response[json_start:json_end].strip()
+            else:
+                json_start = response.find("{")
+                json_end = response.rfind("}") + 1
+                json_str = response[json_start:json_end]
+            
+            meal_plan_data = json.loads(json_str)
+            
+            return meal_plan_data
+            
+        except Exception as e:
+            logger.error(f"Error parsing meal plan response: {e}")
+            logger.debug(f"Response was: {response}")
+            raise ValueError("Failed to parse meal plan from AI response")
+    
+    def _parse_pairing_response(self, response: str) -> List[Dict[str, str]]:
+        """Parse ingredient pairing suggestions from response"""
+        
+        pairings = []
+        lines = response.strip().split('\n')
+        
+        for line in lines:
+            line = line.strip()
+            if line and (line[0].isdigit() or line.startswith('-') or line.startswith('•')):
+                # Remove leading number/bullet
+                cleaned = line.lstrip('0123456789.-•) ').strip()
+                
+                if cleaned and ' - ' in cleaned:
+                    # Split ingredient from explanation
+                    parts = cleaned.split(' - ', 1)
+                    pairings.append({
+                        'ingredient': parts[0].strip(),
+                        'explanation': parts[1].strip() if len(parts) > 1 else ''
+                    })
+                elif cleaned:
+                    pairings.append({
+                        'ingredient': cleaned,
+                        'explanation': ''
+                    })
+        
+        return pairings if pairings else [{'ingredient': response.strip(), 'explanation': ''}]
 
 
 class ClaudeClientFactory:
