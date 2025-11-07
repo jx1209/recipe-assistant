@@ -1,6 +1,6 @@
 """
 AI-powered features API endpoints
-Handles Claude API integration for recipe generation and cooking assistance
+handles Claude API integration for recipe generation and cooking assistance
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -16,15 +16,23 @@ from src.database import get_db
 from src.auth.dependencies import get_current_user
 from src.config.settings import get_settings
 from src.utils.encryption import get_encryption_service
+from src.substitution_engine import SubstitutionEngine
+from src.core.cooking_knowledge_base import CookingKnowledgeBase
+from src.core.meal_plan_templates import MealPlanTemplates
 from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["ai"])
 settings = get_settings()
 
+# Initialize fallback services
+substitution_engine = SubstitutionEngine()
+knowledge_base = CookingKnowledgeBase()
+meal_plan_templates = MealPlanTemplates()
+
 
 class AIRecipeGenerateRequest(BaseModel):
-    """Request model for AI recipe generation"""
+    """request model for AI recipe generation"""
     ingredients: Optional[List[str]] = None
     description: Optional[str] = None
     dietary_restrictions: Optional[List[str]] = None
@@ -36,25 +44,25 @@ class AIRecipeGenerateRequest(BaseModel):
 
 
 class CookingQuestionRequest(BaseModel):
-    """Request model for cooking Q&A"""
+    """request model for cooking Q&A"""
     question: str = Field(..., min_length=5, max_length=500)
     recipe_id: Optional[int] = None  # Optional recipe context
 
 
 class UserAPIKeyRequest(BaseModel):
-    """Request model for setting user API key"""
+    """request model for setting user API key"""
     api_key: str = Field(..., min_length=20)
 
 
 class SubstitutionRequest(BaseModel):
-    """Request model for AI substitution suggestions"""
+    """request model for AI substitution suggestions"""
     ingredient: str
     dietary_restrictions: Optional[List[str]] = None
     recipe_context: Optional[str] = None
 
 
 class RecipeModificationRequest(BaseModel):
-    """Request model for recipe modification"""
+    """request model for recipe modification"""
     recipe_id: int
     modification_type: str = Field(..., description="Type: healthier, vegetarian, vegan, gluten-free, low-carb, etc")
     specific_request: Optional[str] = Field(None, description="Specific modification instructions")
@@ -62,7 +70,7 @@ class RecipeModificationRequest(BaseModel):
 
 
 class MealPlanGenerateRequest(BaseModel):
-    """Request model for AI meal plan generation"""
+    """request model for AI meal plan generation"""
     days: int = Field(default=7, ge=1, le=14, description="Number of days (1-14)")
     dietary_restrictions: Optional[List[str]] = None
     cuisine_preferences: Optional[List[str]] = None
@@ -72,16 +80,17 @@ class MealPlanGenerateRequest(BaseModel):
 
 
 class IngredientPairingRequest(BaseModel):
-    """Request model for ingredient pairing suggestions"""
+    """request model for ingredient pairing suggestions"""
     main_ingredient: str = Field(..., min_length=2)
     cuisine: Optional[str] = None
     meal_type: Optional[str] = None
 
 
-def get_claude_client(current_user: UserResponse = Depends(get_current_user)) -> ClaudeClient:
+def get_claude_client(current_user: UserResponse = Depends(get_current_user)) -> Optional[ClaudeClient]:
     """
-    Get Claude client for current user
-    Uses user's API key if available, otherwise system key
+    get Claude client for current user
+    uses user's API key if available, otherwise system key
+    returns None if no API key available (will use fallback systems)
     """
     db = get_db(settings.DATABASE_URL)
     cursor = db.conn.cursor()
@@ -95,23 +104,25 @@ def get_claude_client(current_user: UserResponse = Depends(get_current_user)) ->
     
     if row and row[0]:
         # User has their own key - decrypt and use it
-        encryption_service = get_encryption_service()
-        user_api_key = encryption_service.decrypt(row[0])
-        return ClaudeClientFactory.get_user_client(current_user.id, user_api_key)
+        try:
+            encryption_service = get_encryption_service()
+            user_api_key = encryption_service.decrypt(row[0])
+            return ClaudeClientFactory.get_user_client(current_user.id, user_api_key)
+        except Exception as e:
+            logger.warning(f"Failed to decrypt user API key: {e}")
+            return None
     
     # Use system API key
     system_api_key = os.getenv('CLAUDE_API_KEY')
     if not system_api_key:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="AI features are not available. Please set your own Claude API key or contact administrator."
-        )
+        # No API key available - will use fallback systems
+        return None
     
     return ClaudeClientFactory.get_system_client(system_api_key)
 
 
 def get_recipe_manager() -> RecipeManager:
-    """Dependency to get recipe manager"""
+    """dependency to get recipe manager"""
     db = get_db(settings.DATABASE_URL)
     return RecipeManager(db.conn)
 
@@ -120,14 +131,22 @@ def get_recipe_manager() -> RecipeManager:
 async def generate_recipe(
     request: AIRecipeGenerateRequest,
     current_user: UserResponse = Depends(get_current_user),
-    claude_client: ClaudeClient = Depends(get_claude_client),
+    claude_client: Optional[ClaudeClient] = Depends(get_claude_client),
     recipe_manager: RecipeManager = Depends(get_recipe_manager)
 ):
     """
-    Generate a recipe using AI
-    Can generate from ingredients list or text description
+    generate a recipe using AI
+    can generate from ingredients list or text description
+    requires Claude API key (no fallback - use recipe search/recommendations instead)
     """
     try:
+        # Check if AI is available
+        if not claude_client:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Recipe generation requires AI. Please set up your Claude API key, or use recipe search (/recipes/search) and recommendations (/recommendations) to find existing recipes."
+            )
+        
         # Validate request
         if not request.ingredients and not request.description:
             raise HTTPException(
@@ -194,16 +213,17 @@ async def generate_recipe(
         )
 
 
-@router.post("/ai/ask-cooking", response_model=Dict[str, str])
+@router.post("/ai/ask-cooking", response_model=Dict[str, Any])
 async def ask_cooking_question(
     request: CookingQuestionRequest,
     current_user: UserResponse = Depends(get_current_user),
-    claude_client: ClaudeClient = Depends(get_claude_client),
+    claude_client: Optional[ClaudeClient] = Depends(get_claude_client),
     recipe_manager: RecipeManager = Depends(get_recipe_manager)
 ):
     """
-    Ask a cooking-related question
-    Optionally provide recipe context for recipe-specific questions
+    ask a cooking-related question
+    uses AI if API key available, otherwise uses knowledge base
+    optionally provide recipe context for recipe-specific questions
     """
     try:
         recipe_context = None
@@ -218,18 +238,58 @@ async def ask_cooking_question(
                     "instructions": recipe.instructions
                 }
         
-        # Get answer from Claude
-        answer = await claude_client.answer_cooking_question(
-            question=request.question,
-            recipe_context=recipe_context
-        )
+        # Try AI first if available
+        if claude_client:
+            answer = await claude_client.answer_cooking_question(
+                question=request.question,
+                recipe_context=recipe_context
+            )
+            
+            logger.info(f"Answered cooking question with AI for user {current_user.id}")
+            
+            return {
+                "question": request.question,
+                "answer": answer,
+                "recipe_id": str(request.recipe_id) if request.recipe_id else None,
+                "source": "ai",
+                "message": "Answer powered by Claude AI"
+            }
         
-        logger.info(f"Answered cooking question for user {current_user.id}")
+        # Fallback to knowledge base
+        answer = knowledge_base.get_answer(request.question)
+        
+        if not answer:
+            # No exact match - return search results
+            results = knowledge_base.search(request.question)
+            if results:
+                answer = results[0]["answer"]
+                related = [r["answer"] for r in results[1:3]]
+                
+                return {
+                    "question": request.question,
+                    "answer": answer,
+                    "recipe_id": str(request.recipe_id) if request.recipe_id else None,
+                    "source": "knowledge_base",
+                    "message": "Answer from cooking knowledge base (AI not available)",
+                    "related_topics": related
+                }
+            else:
+                return {
+                    "question": request.question,
+                    "answer": "I couldn't find a specific answer to your question in the knowledge base. Try asking about cooking techniques, temperatures, timing, food safety, or measurements.",
+                    "recipe_id": str(request.recipe_id) if request.recipe_id else None,
+                    "source": "knowledge_base",
+                    "message": "No matching answer found. Set up Claude API key for AI-powered answers."
+                }
+        
+        logger.info(f"Answered cooking question with knowledge base for user {current_user.id}")
         
         return {
             "question": request.question,
             "answer": answer,
-            "recipe_id": str(request.recipe_id) if request.recipe_id else None
+            "recipe_id": str(request.recipe_id) if request.recipe_id else None,
+            "source": "knowledge_base",
+            "message": "Answer from cooking knowledge base (AI not available)"
         }
         
     except Exception as e:
@@ -244,29 +304,56 @@ async def ask_cooking_question(
 async def suggest_ai_substitution(
     request: SubstitutionRequest,
     current_user: UserResponse = Depends(get_current_user),
-    claude_client: ClaudeClient = Depends(get_claude_client)
+    claude_client: Optional[ClaudeClient] = Depends(get_claude_client)
 ):
     """
-    Get AI-powered ingredient substitution suggestions
-    More intelligent than rule-based substitutions
+    get ingredient substitution suggestions
+    uses AI if available, otherwise uses comprehensive rule-based engine
     """
     try:
-        substitutions = await claude_client.suggest_substitutions(
+        # Try AI first if available
+        if claude_client:
+            substitutions = await claude_client.suggest_substitutions(
+                ingredient=request.ingredient,
+                dietary_restrictions=request.dietary_restrictions,
+                recipe_context=request.recipe_context
+            )
+            
+            logger.info(f"Suggested AI substitutions for '{request.ingredient}' for user {current_user.id}")
+            
+            return {
+                "ingredient": request.ingredient,
+                "substitutions": substitutions,
+                "source": "ai",
+                "message": "AI-powered substitution suggestions"
+            }
+        
+        # Fallback to rule-based engine
+        substitutions = substitution_engine.suggest(
             ingredient=request.ingredient,
-            dietary_restrictions=request.dietary_restrictions,
-            recipe_context=request.recipe_context
+            dietary_flags=request.dietary_restrictions
         )
         
-        logger.info(f"Suggested AI substitutions for '{request.ingredient}' for user {current_user.id}")
+        if not substitutions:
+            return {
+                "ingredient": request.ingredient,
+                "substitutions": [],
+                "source": "rule_based",
+                "message": f"No substitutions found for '{request.ingredient}' in our database. Try AI-powered suggestions by setting up Claude API key.",
+                "supported_ingredients": substitution_engine.get_supported_ingredients()[:20]  # Show some examples
+            }
+        
+        logger.info(f"Suggested rule-based substitutions for '{request.ingredient}' for user {current_user.id}")
         
         return {
             "ingredient": request.ingredient,
             "substitutions": substitutions,
-            "source": "AI-powered"
+            "source": "rule_based",
+            "message": "Rule-based substitution suggestions (AI not available)"
         }
         
     except Exception as e:
-        logger.error(f"Error suggesting AI substitutions: {e}")
+        logger.error(f"Error suggesting substitutions: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error generating substitution suggestions"
@@ -281,8 +368,8 @@ async def set_user_api_key(
     current_user: UserResponse = Depends(get_current_user)
 ):
     """
-    Set user's personal Claude API key
-    The key is encrypted before storage
+    set user's personal Claude API key
+    the key is encrypted before storage
     """
     try:
         # Validate API key format (basic check)
@@ -326,8 +413,8 @@ async def delete_user_api_key(
     current_user: UserResponse = Depends(get_current_user)
 ):
     """
-    Delete user's personal Claude API key
-    User will fall back to system API key if available
+    delete user's personal Claude API key
+    user will fall back to system API key if available
     """
     try:
         db = get_db(settings.DATABASE_URL)
@@ -357,7 +444,7 @@ async def get_api_key_status(
     current_user: UserResponse = Depends(get_current_user)
 ):
     """
-    Check if user has API key configured and if system key is available
+    check if user has API key configured and if system key is available
     """
     try:
         db = get_db(settings.DATABASE_URL)
@@ -392,14 +479,22 @@ async def get_api_key_status(
 async def modify_recipe(
     request: RecipeModificationRequest,
     current_user: UserResponse = Depends(get_current_user),
-    claude_client: ClaudeClient = Depends(get_claude_client),
+    claude_client: Optional[ClaudeClient] = Depends(get_claude_client),
     recipe_manager: RecipeManager = Depends(get_recipe_manager)
 ):
     """
-    Modify an existing recipe with AI
-    Can make it healthier, vegetarian, vegan, gluten-free, low-carb, etc.
+    modify an existing recipe with AI
+    can make it healthier, vegetarian, vegan, gluten-free, low-carb, etc
+    requires Claude API key (no fallback available for this feature)
     """
     try:
+        # Check if AI is available
+        if not claude_client:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Recipe modification requires AI. Please set up your Claude API key to use this feature."
+            )
+        
         # Get original recipe
         original_recipe = await recipe_manager.get_recipe(request.recipe_id, current_user.id)
         
@@ -476,11 +571,11 @@ async def modify_recipe(
 async def generate_ai_meal_plan(
     request: MealPlanGenerateRequest,
     current_user: UserResponse = Depends(get_current_user),
-    claude_client: ClaudeClient = Depends(get_claude_client)
+    claude_client: Optional[ClaudeClient] = Depends(get_claude_client)
 ):
     """
-    Generate an AI-powered meal plan
-    Creates complete recipes for each meal of each day
+    generate a meal plan
+    uses AI if available, otherwise uses pre-designed templates
     """
     try:
         # Get user's dietary preferences if not provided
@@ -506,16 +601,42 @@ async def generate_ai_meal_plan(
             user_cuisines = json.loads(row['favorite_cuisines'] or '[]')
             cuisine_preferences = user_cuisines if user_cuisines else None
         
-        # Generate meal plan using Claude
-        meal_plan_data = await claude_client.generate_meal_plan(
-            days=request.days,
-            dietary_restrictions=dietary_restrictions,
-            cuisine_preferences=cuisine_preferences,
-            calories_target=request.calories_target,
-            meal_types=request.meal_types
-        )
-        
-        logger.info(f"Generated {request.days}-day meal plan for user {current_user.id}")
+        # Try AI first if available
+        if claude_client:
+            # Generate meal plan using Claude
+            meal_plan_data = await claude_client.generate_meal_plan(
+                days=request.days,
+                dietary_restrictions=dietary_restrictions,
+                cuisine_preferences=cuisine_preferences,
+                calories_target=request.calories_target,
+                meal_types=request.meal_types
+            )
+            
+            logger.info(f"Generated AI {request.days}-day meal plan for user {current_user.id}")
+            meal_plan_data["source"] = "ai"
+            meal_plan_data["message"] = "AI-generated meal plan"
+        else:
+            # Fallback to template-based meal plans
+            template_name = "balanced_weekly"
+            
+            # Choose template based on dietary restrictions
+            if dietary_restrictions:
+                restrictions_lower = [r.lower() for r in dietary_restrictions]
+                if any(r in restrictions_lower for r in ["vegetarian", "vegan"]):
+                    template_name = "vegetarian_weekly"
+            
+            meal_plan_data = meal_plan_templates.get_meal_plan(
+                template_name=template_name,
+                days=request.days,
+                dietary_restrictions=dietary_restrictions
+            )
+            
+            logger.info(f"Generated template-based {request.days}-day meal plan for user {current_user.id}")
+            meal_plan_data["source"] = "template"
+            meal_plan_data["message"] = "Template-based meal plan (AI not available). For custom AI-generated plans, set up Claude API key."
+            
+            # Add list of available templates
+            meal_plan_data["available_templates"] = meal_plan_templates.list_templates()
         
         # Save meal plan if requested
         if request.save_plan:
@@ -613,13 +734,21 @@ async def generate_ai_meal_plan(
 async def get_ingredient_pairings(
     request: IngredientPairingRequest,
     current_user: UserResponse = Depends(get_current_user),
-    claude_client: ClaudeClient = Depends(get_claude_client)
+    claude_client: Optional[ClaudeClient] = Depends(get_claude_client)
 ):
     """
-    Get AI-powered ingredient pairing suggestions
-    Suggests ingredients that complement the main ingredient
+    get AI-powered ingredient pairing suggestions
+    suggests ingredients that complement the main ingredient
+    requires Claude API key (no fallback available for this feature)
     """
     try:
+        # Check if AI is available
+        if not claude_client:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Ingredient pairing suggestions require AI. Please set up your Claude API key to use this feature."
+            )
+        
         pairings = await claude_client.suggest_ingredient_pairings(
             main_ingredient=request.main_ingredient,
             cuisine=request.cuisine,
