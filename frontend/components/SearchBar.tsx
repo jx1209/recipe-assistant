@@ -1,26 +1,45 @@
-"use client"
-import { useState } from "react"
+'use client'
 
-export function SearchBar() {
-  const [query, setQuery] = useState("")
+/**
+ * search bar component
+ */
+
+import { useState } from 'react'
+import { Search } from 'lucide-react'
+
+interface SearchBarProps {
+  onSearch?: (query: string) => void
+  placeholder?: string
+}
+
+export function SearchBar({ onSearch, placeholder = 'search recipes...' }: SearchBarProps) {
+  const [query, setQuery] = useState('')
 
   const handleSearch = () => {
-    console.log("Search:", query)
-    // Call backend API
+    if (onSearch) {
+      onSearch(query)
+    }
+  }
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSearch()
+    }
   }
 
   return (
-    <div className="flex gap-2">
+    <div className="relative">
+      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+        <Search className="h-5 w-5 text-gray-400" />
+      </div>
       <input
         type="text"
-        placeholder="Search recipes..."
+        placeholder={placeholder}
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        className="border border-gray-300 rounded px-3 py-2 w-full"
+        onKeyPress={handleKeyPress}
+        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition"
       />
-      <button onClick={handleSearch} className="bg-blue-600 text-white px-4 py-2 rounded">
-        Search
-      </button>
     </div>
   )
 }
