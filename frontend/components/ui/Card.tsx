@@ -1,5 +1,5 @@
 /**
- * reusable card component
+ * Enhanced card component with multiple variants and animations
  */
 
 import { HTMLAttributes, ReactNode } from 'react'
@@ -7,18 +7,38 @@ import { clsx } from 'clsx'
 
 interface CardProps extends HTMLAttributes<HTMLDivElement> {
   children: ReactNode
-  variant?: 'default' | 'bordered' | 'elevated'
+  variant?: 'default' | 'bordered' | 'elevated' | 'glass' | 'gradient'
+  hover?: boolean
+  padding?: 'none' | 'sm' | 'md' | 'lg'
 }
 
-export function Card({ children, variant = 'default', className, ...props }: CardProps) {
+export function Card({ 
+  children, 
+  variant = 'default', 
+  hover = false,
+  padding,
+  className, 
+  ...props 
+}: CardProps) {
   return (
     <div
       className={clsx(
-        'rounded-xl',
+        'rounded-xl transition-all duration-300',
         {
-          'bg-white shadow': variant === 'default',
+          // Variants
+          'bg-white shadow-soft': variant === 'default',
           'bg-white border-2 border-gray-200': variant === 'bordered',
-          'bg-white shadow-lg': variant === 'elevated',
+          'bg-white shadow-elevation-2': variant === 'elevated',
+          'glass backdrop-blur-lg': variant === 'glass',
+          'bg-gradient-primary text-white shadow-lg': variant === 'gradient',
+          
+          // Hover effect
+          'card-hover cursor-pointer': hover,
+          
+          // Padding (if set directly on card)
+          'p-2': padding === 'sm',
+          'p-4': padding === 'md',
+          'p-6': padding === 'lg',
         },
         className
       )}
@@ -35,7 +55,7 @@ interface CardHeaderProps extends HTMLAttributes<HTMLDivElement> {
 
 export function CardHeader({ children, className, ...props }: CardHeaderProps) {
   return (
-    <div className={clsx('px-6 py-4 border-b border-gray-200', className)} {...props}>
+    <div className={clsx('px-6 py-5 border-b border-gray-200', className)} {...props}>
       {children}
     </div>
   )
@@ -47,7 +67,7 @@ interface CardContentProps extends HTMLAttributes<HTMLDivElement> {
 
 export function CardContent({ children, className, ...props }: CardContentProps) {
   return (
-    <div className={clsx('px-6 py-4', className)} {...props}>
+    <div className={clsx('px-6 py-5', className)} {...props}>
       {children}
     </div>
   )
