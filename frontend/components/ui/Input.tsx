@@ -44,7 +44,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           <input
             ref={ref}
             className={clsx(
-              'w-full px-4 py-2.5 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-0',
+              'w-full px-4 py-2.5 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-0 text-gray-900 placeholder:text-gray-400',
               {
                 // Variants
                 'border border-gray-300 bg-white': variant === 'default',

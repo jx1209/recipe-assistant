@@ -11,7 +11,7 @@ import { RecipeCard } from '@/components/RecipeCard'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent } from '@/components/ui/Card'
 import Link from 'next/link'
-import { ChefHat, Sparkles, Search, TrendingUp, Heart } from 'lucide-react'
+import { ChefHat, Sparkles, Search, TrendingUp, Heart, Star } from 'lucide-react'
 
 export default function HomePage() {
   const { user, isAuthenticated } = useAuth()
