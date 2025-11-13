@@ -24,3 +24,12 @@
 2025-11-06 17:00:55,306 - src.api.middleware - INFO - Exception handlers configured successfully
 2025-11-06 17:08:03,759 - src.api.middleware - INFO - Middleware configured successfully
 2025-11-06 17:08:03,760 - src.api.middleware - INFO - Exception handlers configured successfully
+2025-11-12 14:48:01,000 - src.api.middleware - INFO - Middleware configured successfully
+2025-11-12 14:48:01,002 - src.api.middleware - INFO - Exception handlers configured successfully
+2025-11-12 14:48:01,119 - src.api.main - INFO - starting Recipe Assistant API v1.0.0
+2025-11-12 14:48:01,120 - src.api.main - INFO - environment: development
+2025-11-12 14:48:01,120 - src.api.main - INFO - debug mode: False
+2025-11-12 14:48:01,179 - src.database.db_manager - INFO - Database schema initialized successfully
+2025-11-12 14:48:01,180 - src.database.db_manager - INFO - Database Manager initialized: data\recipe_assistant.db
+2025-11-12 14:48:01,182 - src.api.main - INFO - database initialized: {'users': 0, 'recipes': 0, 'meal_plans': 0, 'ratings': 0, 'db_size_mb': 0.28125}
+2025-11-12 14:48:01,183 - src.api.main - ERROR - failed to initialize database: 'DatabaseManager' object has no attribute 'conn'
