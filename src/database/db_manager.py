@@ -66,6 +66,11 @@ class DatabaseManager:
         
         return self._local.connection
     
+    @property
+    def conn(self) -> sqlite3.Connection:
+        """Property to access the database connection (for backwards compatibility)"""
+        return self._get_connection()
+    
     @contextmanager
     def get_cursor(self):
         """Context manager for database cursor"""
