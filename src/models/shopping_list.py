@@ -15,6 +15,7 @@ class ShoppingItem(BaseModel):
     category: Optional[str] = Field(None, max_length=50)
     checked: bool = False
     notes: Optional[str] = Field(None, max_length=200)
+    recipe_id: Optional[int] = None  # track which recipe this item comes from
     
     @field_validator('ingredient')
     @classmethod
@@ -68,6 +69,7 @@ class ShoppingListResponse(BaseModel):
     total_items: int = 0
     checked_items: int = 0
     categories: List[str] = Field(default_factory=list)
+    recipe_ids: List[int] = Field(default_factory=list)  # list of recipes in this shopping list
     
     model_config = {"from_attributes": True}
 

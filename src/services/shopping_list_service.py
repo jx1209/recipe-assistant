@@ -140,6 +140,7 @@ class ShoppingListService:
             total_items = len(items)
             checked_items = sum(1 for item in items if item.checked)
             categories = list(set(item.category for item in items if item.category))
+            recipe_ids = list(set(item.recipe_id for item in items if item.recipe_id))
             
             shopping_list = ShoppingListResponse(
                 id=row['id'],
@@ -151,7 +152,8 @@ class ShoppingListService:
                 updated_at=datetime.fromisoformat(row['updated_at']),
                 total_items=total_items,
                 checked_items=checked_items,
-                categories=sorted(categories)
+                categories=sorted(categories),
+                recipe_ids=sorted(recipe_ids)
             )
             
             return shopping_list
@@ -347,20 +349,22 @@ class ShoppingListService:
             
             placeholders = ','.join(['?' for _ in recipe_ids])
             cursor.execute(f"""
-                SELECT ingredients_json FROM recipes
+                SELECT id, ingredients_json FROM recipes
                 WHERE id IN ({placeholders}) AND is_deleted = 0
             """, recipe_ids)
             rows = cursor.fetchall()
             
             items = []
             for row in rows:
+                recipe_id = row['id']
                 ingredients = json.loads(row['ingredients_json'])
                 for ing in ingredients:
                     items.append(ShoppingItem(
                         ingredient=ing['name'],
                         quantity=ing.get('quantity'),
                         unit=ing.get('unit'),
-                        checked=False
+                        checked=False,
+                        recipe_id=recipe_id  # track which recipe this is from
                     ))
             
             return items

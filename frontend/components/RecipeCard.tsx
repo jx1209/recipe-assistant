@@ -3,7 +3,7 @@
  */
 
 import Link from 'next/link'
-import { Clock, Users, Star, ChefHat, Sparkles } from 'lucide-react'
+import { Clock, Users, Star, ChefHat, Sparkles, ShoppingCart } from 'lucide-react'
 import { Card, CardContent } from './ui/Card'
 import { Badge } from './ui/Badge'
 
@@ -18,6 +18,9 @@ type RecipeCardProps = {
   averageRating?: number | null
   imageUrl?: string | null
   difficulty?: string | null
+  selectable?: boolean
+  selected?: boolean
+  onSelect?: (id: number) => void
 }
 
 export function RecipeCard({ 
@@ -30,7 +33,10 @@ export function RecipeCard({
   servings,
   averageRating,
   imageUrl,
-  difficulty
+  difficulty,
+  selectable = false,
+  selected = false,
+  onSelect
 }: RecipeCardProps) {
   const totalTime = (prepTime || 0) + (cookTime || 0)
   
@@ -44,8 +50,21 @@ export function RecipeCard({
     }
   }
   
+  const handleClick = (e: React.MouseEvent) => {
+    if (selectable && id && onSelect) {
+      e.preventDefault()
+      onSelect(id)
+    }
+  }
+
   const content = (
-    <Card hover className="group h-full overflow-hidden bg-white animate-fade-in-up">
+    <Card 
+      hover 
+      className={`group h-full overflow-hidden bg-white animate-fade-in-up transition-all ${
+        selected ? 'ring-4 ring-orange-500 shadow-2xl scale-105' : ''
+      } ${selectable ? 'cursor-pointer' : ''}`}
+      onClick={selectable ? handleClick : undefined}
+    >
       {/* Image Section */}
       <div className="relative h-52 bg-gradient-to-br from-gray-200 to-gray-300 overflow-hidden">
         {imageUrl ? (
@@ -77,14 +96,31 @@ export function RecipeCard({
           </div>
         )}
         
-        {/* Rating Badge - Top Left */}
-        {averageRating && averageRating > 0 && (
-          <div className="absolute top-3 left-3">
-            <div className="flex items-center gap-1 px-2.5 py-1 bg-white/90 backdrop-blur-sm rounded-full shadow-lg">
-              <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
-              <span className="text-sm font-semibold text-gray-900">{averageRating.toFixed(1)}</span>
+        {/* Selection Badge or Rating Badge - Top Left */}
+        {selectable ? (
+          <div className="absolute top-3 left-3 z-10">
+            <div 
+              className={`w-8 h-8 rounded-full flex items-center justify-center shadow-lg transition-all ${
+                selected 
+                  ? 'bg-orange-500 scale-110' 
+                  : 'bg-white/90 backdrop-blur-sm'
+              }`}
+            >
+              {selected && <span className="text-white text-xl">✓</span>}
+              {!selected && (
+                <div className="w-4 h-4 border-2 border-gray-400 rounded-full" />
+              )}
             </div>
           </div>
+        ) : (
+          averageRating && averageRating > 0 && (
+            <div className="absolute top-3 left-3">
+              <div className="flex items-center gap-1 px-2.5 py-1 bg-white/90 backdrop-blur-sm rounded-full shadow-lg">
+                <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
+                <span className="text-sm font-semibold text-gray-900">{averageRating.toFixed(1)}</span>
+              </div>
+            </div>
+          )
         )}
       </div>
 
@@ -145,17 +181,26 @@ export function RecipeCard({
         )}
 
         {/* Hover Action Hint */}
-        <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center gap-2 text-primary-600 text-sm font-semibold pt-1">
-          <Sparkles className="h-4 w-4" />
-          <span>View Recipe</span>
-        </div>
+        {!selectable && (
+          <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center gap-2 text-primary-600 text-sm font-semibold pt-1">
+            <Sparkles className="h-4 w-4" />
+            <span>View Recipe</span>
+          </div>
+        )}
+        {selectable && (
+          <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center gap-2 text-orange-600 text-sm font-semibold pt-1">
+            <ShoppingCart className="h-4 w-4" />
+            <span>{selected ? 'Selected' : 'Select for Shopping List'}</span>
+          </div>
+        )}
       </CardContent>
     </Card>
   )
 
-  if (id) {
-    return <Link href={`/recipe/${id}`} className="block h-full">{content}</Link>
+  // Don't wrap in Link if selectable
+  if (selectable || !id) {
+    return content
   }
 
-  return content
+  return <Link href={`/recipe/${id}`} className="block h-full">{content}</Link>
 }

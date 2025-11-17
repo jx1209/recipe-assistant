@@ -5,20 +5,25 @@
  */
 
 import { useState, useEffect } from 'react'
-import { recipeApi, Recipe } from '@/lib/api'
+import { recipeApi, Recipe, shoppingListApi } from '@/lib/api'
 import { RecipeCard } from '@/components/RecipeCard'
 import { SearchBar } from '@/components/SearchBar'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
 import Link from 'next/link'
-import { Filter, X, Plus, ChefHat } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { Filter, X, Plus, ChefHat, ShoppingCart, Check } from 'lucide-react'
+import toast from 'react-hot-toast'
 
 export default function SearchPage() {
+  const router = useRouter()
   const [recipes, setRecipes] = useState<Recipe[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [showFilters, setShowFilters] = useState(false)
+  const [selectedRecipes, setSelectedRecipes] = useState<Set<number>>(new Set())
+  const [creatingList, setCreatingList] = useState(false)
   
   // filters
   const [cuisine, setCuisine] = useState('')
@@ -67,6 +72,42 @@ export default function SearchPage() {
     setSelectedTags([])
   }
 
+  const toggleRecipeSelection = (recipeId: number) => {
+    const newSelection = new Set(selectedRecipes)
+    if (newSelection.has(recipeId)) {
+      newSelection.delete(recipeId)
+    } else {
+      newSelection.add(recipeId)
+    }
+    setSelectedRecipes(newSelection)
+  }
+
+  const createShoppingList = async () => {
+    if (selectedRecipes.size === 0) {
+      toast.error('Please select at least one recipe')
+      return
+    }
+
+    setCreatingList(true)
+    try {
+      const listName = `Shopping List - ${new Date().toLocaleDateString()}`
+      const shoppingList = await shoppingListApi.createShoppingList({
+        name: listName,
+        recipe_ids: Array.from(selectedRecipes),
+        exclude_pantry: true,
+        group_by_category: true,
+      })
+      
+      toast.success('Shopping list created successfully!')
+      router.push('/shopping-list')
+    } catch (error) {
+      console.error('Failed to create shopping list:', error)
+      toast.error('Failed to create shopping list')
+    } finally {
+      setCreatingList(false)
+    }
+  }
+
   const hasActiveFilters = cuisine || difficulty || mealType || maxPrepTime || selectedTags.length > 0
 
   const commonTags = ['vegetarian', 'vegan', 'gluten-free', 'dairy-free', 'quick', 'healthy', 'comfort-food']
@@ -86,12 +127,28 @@ export default function SearchPage() {
               </h1>
               <p className="text-lg text-gray-600">Browse and search thousands of delicious recipes</p>
             </div>
-            <Link href="/recipe/new">
-              <Button variant="gradient" size="lg" rounded="full" className="shadow-elevation-2">
-                <Plus className="h-5 w-5 mr-2" />
-                Add Recipe
+            <div className="flex gap-3">
+              <Link href="/recipe/new">
+                <Button variant="gradient" size="lg" rounded="full" className="shadow-elevation-2">
+                  <Plus className="h-5 w-5 mr-2" />
+                  Add Recipe
+                </Button>
+              </Link>
+              <Button 
+                variant={selectedRecipes.size > 0 ? "primary" : "outline"} 
+                size="lg" 
+                rounded="full"
+                onClick={() => {
+                  if (selectedRecipes.size > 0) {
+                    setSelectedRecipes(new Set())
+                  }
+                }}
+                className={selectedRecipes.size > 0 ? "bg-orange-600 hover:bg-orange-700" : ""}
+              >
+                <ShoppingCart className="h-5 w-5 mr-2" />
+                {selectedRecipes.size > 0 ? `${selectedRecipes.size} Selected` : 'Select Mode'}
               </Button>
-            </Link>
+            </div>
           </div>
 
           {/* Search Bar with Filter Button */}
@@ -257,24 +314,63 @@ export default function SearchPage() {
             ))}
           </div>
         ) : recipes.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {recipes.map((recipe, index) => (
-              <div key={recipe.id} className="animate-fade-in-up" style={{ animationDelay: `${index * 0.05}s` }}>
-                <RecipeCard
-                  id={recipe.id}
-                  title={recipe.title}
-                  description={recipe.description}
-                  tags={recipe.tags}
-                  prepTime={recipe.prep_time}
-                  cookTime={recipe.cook_time}
-                  servings={recipe.servings}
-                  averageRating={recipe.average_rating}
-                  imageUrl={recipe.image_url}
-                  difficulty={recipe.difficulty}
-                />
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pb-24">
+              {recipes.map((recipe, index) => (
+                <div key={recipe.id} className="animate-fade-in-up" style={{ animationDelay: `${index * 0.05}s` }}>
+                  <RecipeCard
+                    id={recipe.id}
+                    title={recipe.title}
+                    description={recipe.description}
+                    tags={recipe.tags}
+                    prepTime={recipe.prep_time}
+                    cookTime={recipe.cook_time}
+                    servings={recipe.servings}
+                    averageRating={recipe.average_rating}
+                    imageUrl={recipe.image_url}
+                    difficulty={recipe.difficulty}
+                    selectable={selectedRecipes.size > 0}
+                    selected={selectedRecipes.has(recipe.id)}
+                    onSelect={toggleRecipeSelection}
+                  />
+                </div>
+              ))}
+            </div>
+
+            {/* Floating Action Button */}
+            {selectedRecipes.size > 0 && (
+              <div className="fixed bottom-8 right-8 z-50 animate-fade-in-up">
+                <Card className="bg-white shadow-2xl">
+                  <CardContent className="p-4 flex items-center gap-4">
+                    <div className="text-sm">
+                      <p className="font-bold text-gray-900">{selectedRecipes.size} Recipe{selectedRecipes.size !== 1 ? 's' : ''} Selected</p>
+                      <p className="text-gray-500 text-xs">Ready to create shopping list</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setSelectedRecipes(new Set())}
+                        className="border-gray-300"
+                      >
+                        Clear
+                      </Button>
+                      <Button
+                        variant="gradient"
+                        size="sm"
+                        onClick={createShoppingList}
+                        disabled={creatingList}
+                        className="bg-orange-600 hover:bg-orange-700 shadow-lg"
+                      >
+                        <ShoppingCart className="h-4 w-4 mr-2" />
+                        {creatingList ? 'Creating...' : 'Create List'}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
-            ))}
-          </div>
+            )}
+          </>
         ) : (
           <Card variant="elevated" className="animate-fade-in">
             <CardContent className="py-20 text-center">
