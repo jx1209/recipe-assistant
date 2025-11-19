@@ -58,14 +58,20 @@ export default function PlannerPage() {
   }, [])
 
   const handleSearch = async () => {
-    if (!searchQuery.trim()) return
+    if (!searchQuery.trim()) {
+      toast.error('Please enter a search term')
+      return
+    }
     
     try {
       const results = await recipeApi.searchRecipes(searchQuery)
       setSearchResults(results)
+      if (results.length === 0) {
+        toast('No recipes found. Try a different search term.', { icon: 'ℹ️' })
+      }
     } catch (error) {
       console.error('Failed to search recipes:', error)
-      toast.error('Failed to search recipes')
+      toast.error('Failed to search recipes. Make sure the backend is running.')
     }
   }
 
@@ -129,11 +135,12 @@ export default function PlannerPage() {
         group_by_category: true,
       })
       
-      toast.success('Shopping list created!')
+      toast.success(`Shopping list created with ${recipeIds.length} recipes!`)
       router.push('/shopping-list')
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to create shopping list:', error)
-      toast.error('Failed to create shopping list')
+      const errorMsg = error.response?.data?.detail || 'Failed to create shopping list. Please try again.'
+      toast.error(errorMsg)
     } finally {
       setCreatingList(false)
     }
@@ -282,7 +289,7 @@ export default function PlannerPage() {
 
                 <div className="flex gap-3 mb-6">
                   <Input
-                    type="text"
+              type="text"
                     placeholder="Search recipes..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
