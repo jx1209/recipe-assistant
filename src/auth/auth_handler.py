@@ -38,7 +38,25 @@ class AuthHandler:
     
     def hash_password(self, password: str) -> str:
         """Hash a password"""
-        return pwd_context.hash(password)
+        # Bcrypt has a 72 byte limit
+        # Pre-truncate to avoid any bcrypt errors
+        password_bytes = password.encode('utf-8')
+        if len(password_bytes) > 72:
+            # Truncate to 72 bytes
+            password_bytes = password_bytes[:72]
+            # Decode back, ignoring any incomplete multi-byte characters
+            password = password_bytes.decode('utf-8', errors='ignore')
+        
+        try:
+            return pwd_context.hash(password)
+        except (ValueError, TypeError) as e:
+            # Catch any bcrypt errors and try with a shorter password
+            error_msg = str(e).lower()
+            if "72" in error_msg or "too long" in error_msg or "byte" in error_msg:
+                # Be very conservative - truncate to 70 bytes to be safe
+                password_safe = password.encode('utf-8')[:70].decode('utf-8', errors='ignore')
+                return pwd_context.hash(password_safe)
+            raise
     
     def verify_password(self, plain_password: str, hashed_password: str) -> bool:
         """Verify a password against its hash"""
@@ -155,7 +173,20 @@ def get_auth_handler() -> AuthHandler:
 # Convenience functions
 def get_password_hash(password: str) -> str:
     """Hash a password"""
-    return pwd_context.hash(password)
+    # Bcrypt has a 72 byte limit
+    password_bytes = password.encode('utf-8')
+    if len(password_bytes) > 72:
+        password_bytes = password_bytes[:72]
+        password = password_bytes.decode('utf-8', errors='ignore')
+    
+    try:
+        return pwd_context.hash(password)
+    except (ValueError, TypeError) as e:
+        error_msg = str(e).lower()
+        if "72" in error_msg or "too long" in error_msg or "byte" in error_msg:
+            password_safe = password.encode('utf-8')[:70].decode('utf-8', errors='ignore')
+            return pwd_context.hash(password_safe)
+        raise
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:

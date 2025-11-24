@@ -195,7 +195,12 @@ async def get_current_user_profile(current_user: Dict = Depends(get_current_acti
         full_name=current_user.get('full_name'),
         created_at=current_user['created_at'],
         is_verified=current_user.get('is_verified', False),
-        preferences=preferences
+        preferences=preferences,
+        height=current_user.get('height'),
+        weight=current_user.get('weight'),
+        sex=current_user.get('sex'),
+        body_type=current_user.get('body_type'),
+        bmi=current_user.get('bmi')
     )
 
 
@@ -253,7 +258,12 @@ async def update_current_user(
         full_name=updated_user.get('full_name'),
         created_at=updated_user['created_at'],
         is_verified=updated_user.get('is_verified', False),
-        preferences=preferences
+        preferences=preferences,
+        height=updated_user.get('height'),
+        weight=updated_user.get('weight'),
+        sex=updated_user.get('sex'),
+        body_type=updated_user.get('body_type'),
+        bmi=updated_user.get('bmi')
     )
 
 
@@ -297,7 +307,12 @@ async def update_user_preferences(
         full_name=updated_user.get('full_name'),
         created_at=updated_user['created_at'],
         is_verified=updated_user.get('is_verified', False),
-        preferences=user_preferences
+        preferences=user_preferences,
+        height=updated_user.get('height'),
+        weight=updated_user.get('weight'),
+        sex=updated_user.get('sex'),
+        body_type=updated_user.get('body_type'),
+        bmi=updated_user.get('bmi')
     )
 
 

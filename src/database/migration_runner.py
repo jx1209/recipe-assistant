@@ -21,19 +21,58 @@ class MigrationRunner:
     
     def _ensure_migrations_table(self):
         """Create migrations tracking table if it doesn't exist"""
-        self.conn.execute("""
-            CREATE TABLE IF NOT EXISTS schema_migrations (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                migration_name TEXT UNIQUE NOT NULL,
-                applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        self.conn.commit()
+        cursor = self.conn.cursor()
+        
+        # Check if table exists and what columns it has
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='schema_migrations'")
+        table_exists = cursor.fetchone() is not None
+        
+        if table_exists:
+            # Check if it has the old 'version' column or new 'migration_name' column
+            cursor.execute("PRAGMA table_info(schema_migrations)")
+            columns = {row[1] for row in cursor.fetchall()}
+            
+            if 'version' in columns and 'migration_name' not in columns:
+                # Old schema - add migration_name column or use version
+                # We'll just use version as migration_name
+                pass
+            elif 'migration_name' not in columns:
+                # Create new structure
+                self.conn.execute("""
+                    CREATE TABLE IF NOT EXISTS schema_migrations (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        migration_name TEXT UNIQUE NOT NULL,
+                        applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                self.conn.commit()
+        else:
+            # Create fresh table
+            self.conn.execute("""
+                CREATE TABLE IF NOT EXISTS schema_migrations (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    migration_name TEXT UNIQUE NOT NULL,
+                    applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            self.conn.commit()
     
     def get_applied_migrations(self) -> List[str]:
         """Get list of already applied migrations"""
         cursor = self.conn.cursor()
-        cursor.execute("SELECT migration_name FROM schema_migrations ORDER BY migration_name")
+        
+        # Check which column exists
+        cursor.execute("PRAGMA table_info(schema_migrations)")
+        columns = {row[1] for row in cursor.fetchall()}
+        
+        if 'migration_name' in columns:
+            cursor.execute("SELECT migration_name FROM schema_migrations ORDER BY migration_name")
+        elif 'version' in columns:
+            # Fallback to old schema
+            cursor.execute("SELECT version FROM schema_migrations ORDER BY version")
+        else:
+            return []
+        
         return [row[0] for row in cursor.fetchall()]
     
     def get_pending_migrations(self) -> List[Path]:

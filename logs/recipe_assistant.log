@@ -69,3 +69,524 @@
 2025-11-17 16:47:26,317 - src.database.db_manager - INFO - Database Manager initialized: data\recipe_assistant.db
 2025-11-17 16:47:26,320 - src.api.main - INFO - database initialized: {'users': 1, 'recipes': 6, 'meal_plans': 0, 'ratings': 0, 'db_size_mb': 0.2890625}
 2025-11-17 16:47:26,322 - src.api.main - ERROR - failed to initialize database: no such column: migration_name
+2025-11-23 21:35:34,692 - src.api.middleware - INFO - Middleware configured successfully
+2025-11-23 21:35:34,693 - src.api.middleware - INFO - Exception handlers configured successfully
+2025-11-23 21:35:34,720 - src.api.main - INFO - starting Recipe Assistant API v1.0.0
+2025-11-23 21:35:34,720 - src.api.main - INFO - environment: development
+2025-11-23 21:35:34,721 - src.api.main - INFO - debug mode: False
+2025-11-23 21:35:34,742 - src.database.db_manager - INFO - Database schema initialized successfully
+2025-11-23 21:35:34,742 - src.database.db_manager - INFO - Database Manager initialized: data\recipe_assistant.db
+2025-11-23 21:35:34,743 - src.api.main - INFO - database initialized: {'users': 1, 'recipes': 6, 'meal_plans': 0, 'ratings': 0, 'db_size_mb': 0.2890625}
+2025-11-23 21:35:34,744 - src.database.migration_runner - INFO - Found 1 pending migration(s)
+2025-11-23 21:35:34,744 - src.database.migration_runner - INFO - Applying migration: 001_add_claude_api_key.sql
+2025-11-23 21:35:34,755 - src.database.migration_runner - ERROR - Error applying migration 001_add_claude_api_key.sql: table schema_migrations has no column named migration_name
+2025-11-23 21:35:34,755 - src.database.migration_runner - ERROR - Migration failed: 001_add_claude_api_key.sql. Stopping migration process.
+2025-11-23 21:35:34,755 - src.database.migration_runner - INFO - Applied 0 migration(s)
+2025-11-23 21:35:34,755 - src.api.main - INFO - application startup complete
+2025-11-23 21:36:02,661 - src.api.main - INFO - shutting down application...
+2025-11-23 21:36:02,666 - src.api.main - INFO - database connections closed
+2025-11-23 21:36:02,666 - src.api.main - INFO - application shutdown complete
+2025-11-23 21:39:29,052 - src.api.middleware - INFO - Middleware configured successfully
+2025-11-23 21:39:29,053 - src.api.middleware - INFO - Exception handlers configured successfully
+2025-11-23 21:39:29,078 - src.api.main - INFO - starting Recipe Assistant API v1.0.0
+2025-11-23 21:39:29,078 - src.api.main - INFO - environment: development
+2025-11-23 21:39:29,078 - src.api.main - INFO - debug mode: False
+2025-11-23 21:39:29,093 - src.database.db_manager - INFO - Database schema initialized successfully
+2025-11-23 21:39:29,093 - src.database.db_manager - INFO - Database Manager initialized: data\recipe_assistant.db
+2025-11-23 21:39:29,093 - src.api.main - INFO - database initialized: {'users': 1, 'recipes': 6, 'meal_plans': 0, 'ratings': 0, 'db_size_mb': 0.29296875}
+2025-11-23 21:39:29,094 - src.database.migration_runner - INFO - Found 1 pending migration(s)
+2025-11-23 21:39:29,094 - src.database.migration_runner - INFO - Applying migration: 001_add_claude_api_key.sql
+2025-11-23 21:39:29,095 - src.database.migration_runner - ERROR - Error applying migration 001_add_claude_api_key.sql: duplicate column name: claude_api_key_encrypted
+2025-11-23 21:39:29,095 - src.database.migration_runner - ERROR - Migration failed: 001_add_claude_api_key.sql. Stopping migration process.
+2025-11-23 21:39:29,095 - src.database.migration_runner - INFO - Applied 0 migration(s)
+2025-11-23 21:39:29,095 - src.api.main - INFO - application startup complete
+2025-11-23 21:39:48,155 - src.api.middleware - INFO - Request: POST /api/v1/auth/register
+2025-11-23 21:39:48,179 - passlib.handlers.bcrypt - WARNING - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-11-23 21:39:48,225 - src.api.middleware - ERROR - ValueError: password cannot be longer than 72 bytes, truncate manually if necessary (e.g. my_password[:72])
+2025-11-23 21:39:48,225 - src.api.middleware - INFO - Response: POST /api/v1/auth/register - Status: 400 - Time: 0.0701s
+2025-11-23 21:42:03,520 - src.api.main - INFO - shutting down application...
+2025-11-23 21:42:03,523 - src.api.main - INFO - database connections closed
+2025-11-23 21:42:03,523 - src.api.main - INFO - application shutdown complete
+2025-11-23 21:42:22,841 - src.api.middleware - INFO - Middleware configured successfully
+2025-11-23 21:42:22,841 - src.api.middleware - INFO - Exception handlers configured successfully
+2025-11-23 21:42:22,867 - src.api.main - INFO - starting Recipe Assistant API v1.0.0
+2025-11-23 21:42:22,867 - src.api.main - INFO - environment: development
+2025-11-23 21:42:22,867 - src.api.main - INFO - debug mode: False
+2025-11-23 21:42:22,872 - src.database.db_manager - INFO - Database schema initialized successfully
+2025-11-23 21:42:22,872 - src.database.db_manager - INFO - Database Manager initialized: data\recipe_assistant.db
+2025-11-23 21:42:22,873 - src.api.main - INFO - database initialized: {'users': 1, 'recipes': 6, 'meal_plans': 0, 'ratings': 0, 'db_size_mb': 0.29296875}
+2025-11-23 21:42:22,873 - src.database.migration_runner - INFO - Found 1 pending migration(s)
+2025-11-23 21:42:22,873 - src.database.migration_runner - INFO - Applying migration: 001_add_claude_api_key.sql
+2025-11-23 21:42:22,873 - src.database.migration_runner - ERROR - Error applying migration 001_add_claude_api_key.sql: duplicate column name: claude_api_key_encrypted
+2025-11-23 21:42:22,874 - src.database.migration_runner - ERROR - Migration failed: 001_add_claude_api_key.sql. Stopping migration process.
+2025-11-23 21:42:22,874 - src.database.migration_runner - INFO - Applied 0 migration(s)
+2025-11-23 21:42:22,874 - src.api.main - INFO - application startup complete
+2025-11-23 21:42:41,538 - src.api.middleware - INFO - Request: GET /api/v1/recipes
+2025-11-23 21:42:41,543 - src.api.middleware - ERROR - Unexpected error: AuthHandler.__init__() takes from 1 to 2 positional arguments but 3 were given
+Traceback (most recent call last):
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\starlette\middleware\base.py", line 151, in call_next
+    message = await recv_stream.receive()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\anyio\streams\memory.py", line 126, in receive
+    raise EndOfStream from None
+anyio.EndOfStream
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\xuxje\OneDrive\Desktop\recipe-assistant\src\api\middleware.py", line 62, in dispatch
+    return await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\starlette\middleware\base.py", line 159, in call_next
+    raise app_exc
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\starlette\middleware\base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\starlette\routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\starlette\routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\starlette\routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\starlette\routing.py", line 78, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\starlette\routing.py", line 75, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\fastapi\routing.py", line 292, in app
+    solved_result = await solve_dependencies(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+    )
+    ^
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\fastapi\dependencies\utils.py", line 615, in solve_dependencies
+    solved_result = await solve_dependencies(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<9 lines>...
+    )
+    ^
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\fastapi\dependencies\utils.py", line 640, in solve_dependencies
+    solved = await run_in_threadpool(call, **solved_result.values)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\starlette\concurrency.py", line 38, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\anyio\to_thread.py", line 56, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\anyio\_backends\_asyncio.py", line 2476, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\anyio\_backends\_asyncio.py", line 967, in run
+    result = context.run(func, *args)
+  File "C:\Users\xuxje\OneDrive\Desktop\recipe-assistant\src\auth\dependencies.py", line 24, in get_auth_handler
+    return AuthHandler(settings.JWT_SECRET_KEY, settings.JWT_ALGORITHM)
+TypeError: AuthHandler.__init__() takes from 1 to 2 positional arguments but 3 were given
+2025-11-23 21:42:41,888 - src.api.middleware - INFO - Response: GET /api/v1/recipes - Status: 500 - Time: 0.3507s
+2025-11-23 21:42:41,896 - src.api.middleware - INFO - Request: GET /api/v1/recipes
+2025-11-23 21:42:41,901 - src.api.middleware - ERROR - Unexpected error: AuthHandler.__init__() takes from 1 to 2 positional arguments but 3 were given
+Traceback (most recent call last):
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\starlette\middleware\base.py", line 151, in call_next
+    message = await recv_stream.receive()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\anyio\streams\memory.py", line 126, in receive
+    raise EndOfStream from None
+anyio.EndOfStream
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\xuxje\OneDrive\Desktop\recipe-assistant\src\api\middleware.py", line 62, in dispatch
+    return await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\starlette\middleware\base.py", line 159, in call_next
+    raise app_exc
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\starlette\middleware\base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\starlette\routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\starlette\routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\starlette\routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\starlette\routing.py", line 78, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\starlette\routing.py", line 75, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\fastapi\routing.py", line 292, in app
+    solved_result = await solve_dependencies(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+    )
+    ^
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\fastapi\dependencies\utils.py", line 615, in solve_dependencies
+    solved_result = await solve_dependencies(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<9 lines>...
+    )
+    ^
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\fastapi\dependencies\utils.py", line 640, in solve_dependencies
+    solved = await run_in_threadpool(call, **solved_result.values)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\starlette\concurrency.py", line 38, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\anyio\to_thread.py", line 56, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\anyio\_backends\_asyncio.py", line 2476, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\anyio\_backends\_asyncio.py", line 967, in run
+    result = context.run(func, *args)
+  File "C:\Users\xuxje\OneDrive\Desktop\recipe-assistant\src\auth\dependencies.py", line 24, in get_auth_handler
+    return AuthHandler(settings.JWT_SECRET_KEY, settings.JWT_ALGORITHM)
+TypeError: AuthHandler.__init__() takes from 1 to 2 positional arguments but 3 were given
+2025-11-23 21:42:41,909 - src.api.middleware - INFO - Response: GET /api/v1/recipes - Status: 500 - Time: 0.0128s
+2025-11-23 21:43:00,907 - src.api.middleware - INFO - Request: POST /api/v1/auth/register
+2025-11-23 21:43:00,929 - passlib.handlers.bcrypt - WARNING - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-11-23 21:43:00,943 - src.api.middleware - ERROR - ValueError: password cannot be longer than 72 bytes, truncate manually if necessary (e.g. my_password[:72])
+2025-11-23 21:43:00,944 - src.api.middleware - INFO - Response: POST /api/v1/auth/register - Status: 400 - Time: 0.0366s
+2025-11-23 21:47:08,422 - src.api.main - INFO - shutting down application...
+2025-11-23 21:47:08,424 - src.api.main - INFO - database connections closed
+2025-11-23 21:47:08,424 - src.api.main - INFO - application shutdown complete
+2025-11-23 21:50:53,913 - src.api.middleware - INFO - Middleware configured successfully
+2025-11-23 21:50:53,913 - src.api.middleware - INFO - Exception handlers configured successfully
+2025-11-23 21:50:53,938 - src.api.main - INFO - starting Recipe Assistant API v1.0.0
+2025-11-23 21:50:53,938 - src.api.main - INFO - environment: development
+2025-11-23 21:50:53,939 - src.api.main - INFO - debug mode: False
+2025-11-23 21:50:53,945 - src.database.db_manager - INFO - Database schema initialized successfully
+2025-11-23 21:50:53,946 - src.database.db_manager - INFO - Database Manager initialized: data\recipe_assistant.db
+2025-11-23 21:50:53,946 - src.api.main - INFO - database initialized: {'users': 1, 'recipes': 6, 'meal_plans': 0, 'ratings': 0, 'db_size_mb': 0.29296875}
+2025-11-23 21:50:53,947 - src.database.migration_runner - INFO - Found 1 pending migration(s)
+2025-11-23 21:50:53,947 - src.database.migration_runner - INFO - Applying migration: 001_add_claude_api_key.sql
+2025-11-23 21:50:53,947 - src.database.migration_runner - ERROR - Error applying migration 001_add_claude_api_key.sql: duplicate column name: claude_api_key_encrypted
+2025-11-23 21:50:53,947 - src.database.migration_runner - ERROR - Migration failed: 001_add_claude_api_key.sql. Stopping migration process.
+2025-11-23 21:50:53,947 - src.database.migration_runner - INFO - Applied 0 migration(s)
+2025-11-23 21:50:53,947 - src.api.main - INFO - application startup complete
+2025-11-23 21:51:25,938 - src.api.middleware - INFO - Request: POST /api/v1/auth/register
+2025-11-23 21:51:25,962 - passlib.handlers.bcrypt - WARNING - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-11-23 21:51:25,974 - passlib.handlers.bcrypt - WARNING - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "C:\Users\xuxje\OneDrive\Desktop\recipe-assistant\src\auth\auth_handler.py", line 51, in hash_password
+    return pwd_context.hash(password)
+           ~~~~~~~~~~~~~~~~^^^^^^^^^^
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\passlib\context.py", line 2258, in hash
+    return record.hash(secret, **kwds)
+           ~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\passlib\utils\handlers.py", line 779, in hash
+    self.checksum = self._calc_checksum(secret)
+                    ~~~~~~~~~~~~~~~~~~~^^^^^^^^
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\passlib\handlers\bcrypt.py", line 591, in _calc_checksum
+    self._stub_requires_backend()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\passlib\utils\handlers.py", line 2254, in _stub_requires_backend
+    cls.set_backend()
+    ~~~~~~~~~~~~~~~^^
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\passlib\utils\handlers.py", line 2156, in set_backend
+    return owner.set_backend(name, dryrun=dryrun)
+           ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\passlib\utils\handlers.py", line 2163, in set_backend
+    return cls.set_backend(name, dryrun=dryrun)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\passlib\utils\handlers.py", line 2188, in set_backend
+    cls._set_backend(name, dryrun)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\passlib\utils\handlers.py", line 2311, in _set_backend
+    super(SubclassBackendMixin, cls)._set_backend(name, dryrun)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\passlib\utils\handlers.py", line 2224, in _set_backend
+    ok = loader(**kwds)
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\passlib\handlers\bcrypt.py", line 626, in _load_backend_mixin
+    return mixin_cls._finalize_backend_mixin(name, dryrun)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\passlib\handlers\bcrypt.py", line 421, in _finalize_backend_mixin
+    if detect_wrap_bug(IDENT_2A):
+       ~~~~~~~~~~~~~~~^^^^^^^^^^
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\passlib\handlers\bcrypt.py", line 380, in detect_wrap_bug
+    if verify(secret, bug_hash):
+       ~~~~~~^^^^^^^^^^^^^^^^^^
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\passlib\utils\handlers.py", line 792, in verify
+    return consteq(self._calc_checksum(secret), chk)
+                   ~~~~~~~~~~~~~~~~~~~^^^^^^^^
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\passlib\handlers\bcrypt.py", line 655, in _calc_checksum
+    hash = _bcrypt.hashpw(secret, config)
+ValueError: password cannot be longer than 72 bytes, truncate manually if necessary (e.g. my_password[:72])
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-11-23 21:51:26,115 - src.api.middleware - ERROR - ValueError: password cannot be longer than 72 bytes, truncate manually if necessary (e.g. my_password[:72])
+2025-11-23 21:51:26,117 - src.api.middleware - INFO - Response: POST /api/v1/auth/register - Status: 400 - Time: 0.1796s
+2025-11-23 21:53:00,423 - src.api.main - INFO - shutting down application...
+2025-11-23 21:53:00,425 - src.api.main - INFO - database connections closed
+2025-11-23 21:53:00,425 - src.api.main - INFO - application shutdown complete
+2025-11-23 21:53:09,802 - src.api.middleware - INFO - Middleware configured successfully
+2025-11-23 21:53:09,802 - src.api.middleware - INFO - Exception handlers configured successfully
+2025-11-23 21:53:09,828 - src.api.main - INFO - starting Recipe Assistant API v1.0.0
+2025-11-23 21:53:09,828 - src.api.main - INFO - environment: development
+2025-11-23 21:53:09,828 - src.api.main - INFO - debug mode: False
+2025-11-23 21:53:09,835 - src.database.db_manager - INFO - Database schema initialized successfully
+2025-11-23 21:53:09,835 - src.database.db_manager - INFO - Database Manager initialized: data\recipe_assistant.db
+2025-11-23 21:53:09,836 - src.api.main - INFO - database initialized: {'users': 1, 'recipes': 6, 'meal_plans': 0, 'ratings': 0, 'db_size_mb': 0.29296875}
+2025-11-23 21:53:09,836 - src.database.migration_runner - INFO - Found 1 pending migration(s)
+2025-11-23 21:53:09,836 - src.database.migration_runner - INFO - Applying migration: 001_add_claude_api_key.sql
+2025-11-23 21:53:09,837 - src.database.migration_runner - ERROR - Error applying migration 001_add_claude_api_key.sql: duplicate column name: claude_api_key_encrypted
+2025-11-23 21:53:09,837 - src.database.migration_runner - ERROR - Migration failed: 001_add_claude_api_key.sql. Stopping migration process.
+2025-11-23 21:53:09,837 - src.database.migration_runner - INFO - Applied 0 migration(s)
+2025-11-23 21:53:09,837 - src.api.main - INFO - application startup complete
+2025-11-23 21:54:16,669 - src.api.main - INFO - shutting down application...
+2025-11-23 21:54:16,672 - src.api.main - INFO - database connections closed
+2025-11-23 21:54:16,672 - src.api.main - INFO - application shutdown complete
+2025-11-23 21:54:19,615 - src.api.middleware - INFO - Middleware configured successfully
+2025-11-23 21:54:19,616 - src.api.middleware - INFO - Exception handlers configured successfully
+2025-11-23 21:54:19,643 - src.api.main - INFO - starting Recipe Assistant API v1.0.0
+2025-11-23 21:54:19,643 - src.api.main - INFO - environment: development
+2025-11-23 21:54:19,643 - src.api.main - INFO - debug mode: False
+2025-11-23 21:54:19,649 - src.database.db_manager - INFO - Database schema initialized successfully
+2025-11-23 21:54:19,650 - src.database.db_manager - INFO - Database Manager initialized: data\recipe_assistant.db
+2025-11-23 21:54:19,650 - src.api.main - INFO - database initialized: {'users': 1, 'recipes': 6, 'meal_plans': 0, 'ratings': 0, 'db_size_mb': 0.29296875}
+2025-11-23 21:54:19,651 - src.database.migration_runner - INFO - Found 1 pending migration(s)
+2025-11-23 21:54:19,651 - src.database.migration_runner - INFO - Applying migration: 001_add_claude_api_key.sql
+2025-11-23 21:54:19,651 - src.database.migration_runner - ERROR - Error applying migration 001_add_claude_api_key.sql: duplicate column name: claude_api_key_encrypted
+2025-11-23 21:54:19,652 - src.database.migration_runner - ERROR - Migration failed: 001_add_claude_api_key.sql. Stopping migration process.
+2025-11-23 21:54:19,652 - src.database.migration_runner - INFO - Applied 0 migration(s)
+2025-11-23 21:54:19,652 - src.api.main - INFO - application startup complete
+2025-11-23 21:54:28,577 - src.api.middleware - INFO - Middleware configured successfully
+2025-11-23 21:54:28,577 - src.api.middleware - INFO - Exception handlers configured successfully
+2025-11-23 21:54:28,605 - src.api.main - INFO - starting Recipe Assistant API v1.0.0
+2025-11-23 21:54:28,606 - src.api.main - INFO - environment: development
+2025-11-23 21:54:28,606 - src.api.main - INFO - debug mode: False
+2025-11-23 21:54:28,613 - src.database.db_manager - INFO - Database schema initialized successfully
+2025-11-23 21:54:28,614 - src.database.db_manager - INFO - Database Manager initialized: data\recipe_assistant.db
+2025-11-23 21:54:28,615 - src.api.main - INFO - database initialized: {'users': 1, 'recipes': 6, 'meal_plans': 0, 'ratings': 0, 'db_size_mb': 0.29296875}
+2025-11-23 21:54:28,615 - src.database.migration_runner - INFO - Found 1 pending migration(s)
+2025-11-23 21:54:28,616 - src.database.migration_runner - INFO - Applying migration: 001_add_claude_api_key.sql
+2025-11-23 21:54:28,616 - src.database.migration_runner - ERROR - Error applying migration 001_add_claude_api_key.sql: duplicate column name: claude_api_key_encrypted
+2025-11-23 21:54:28,616 - src.database.migration_runner - ERROR - Migration failed: 001_add_claude_api_key.sql. Stopping migration process.
+2025-11-23 21:54:28,616 - src.database.migration_runner - INFO - Applied 0 migration(s)
+2025-11-23 21:54:28,616 - src.api.main - INFO - application startup complete
+2025-11-23 21:55:00,762 - src.api.middleware - INFO - Request: POST /api/v1/auth/register
+2025-11-23 21:55:01,439 - src.api.routes.users - INFO - New user registered: jx38@rice.edu
+2025-11-23 21:55:01,442 - src.api.middleware - INFO - Response: POST /api/v1/auth/register - Status: 201 - Time: 0.6800s
+2025-11-23 21:55:01,453 - src.api.middleware - INFO - Request: GET /api/v1/users/me
+2025-11-23 21:55:01,455 - src.api.middleware - INFO - Response: GET /api/v1/users/me - Status: 200 - Time: 0.0026s
+2025-11-23 21:55:02,675 - src.api.middleware - INFO - Request: GET /api/v1/recipes
+2025-11-23 21:55:02,677 - src.api.middleware - ERROR - Unexpected error: AuthHandler.__init__() takes from 1 to 2 positional arguments but 3 were given
+Traceback (most recent call last):
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\starlette\middleware\base.py", line 151, in call_next
+    message = await recv_stream.receive()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\anyio\streams\memory.py", line 126, in receive
+    raise EndOfStream from None
+anyio.EndOfStream
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\xuxje\OneDrive\Desktop\recipe-assistant\src\api\middleware.py", line 62, in dispatch
+    return await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\starlette\middleware\base.py", line 159, in call_next
+    raise app_exc
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\starlette\middleware\base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\starlette\routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\starlette\routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\starlette\routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\starlette\routing.py", line 78, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\starlette\routing.py", line 75, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\fastapi\routing.py", line 292, in app
+    solved_result = await solve_dependencies(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+    )
+    ^
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\fastapi\dependencies\utils.py", line 615, in solve_dependencies
+    solved_result = await solve_dependencies(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<9 lines>...
+    )
+    ^
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\fastapi\dependencies\utils.py", line 640, in solve_dependencies
+    solved = await run_in_threadpool(call, **solved_result.values)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\starlette\concurrency.py", line 38, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\anyio\to_thread.py", line 56, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\anyio\_backends\_asyncio.py", line 2476, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\anyio\_backends\_asyncio.py", line 967, in run
+    result = context.run(func, *args)
+  File "C:\Users\xuxje\OneDrive\Desktop\recipe-assistant\src\auth\dependencies.py", line 24, in get_auth_handler
+    return AuthHandler(settings.JWT_SECRET_KEY, settings.JWT_ALGORITHM)
+TypeError: AuthHandler.__init__() takes from 1 to 2 positional arguments but 3 were given
+2025-11-23 21:55:02,696 - src.api.middleware - INFO - Response: GET /api/v1/recipes - Status: 500 - Time: 0.0216s
+2025-11-23 21:55:02,700 - src.api.middleware - INFO - Request: GET /api/v1/recipes
+2025-11-23 21:55:02,704 - src.api.middleware - ERROR - Unexpected error: AuthHandler.__init__() takes from 1 to 2 positional arguments but 3 were given
+Traceback (most recent call last):
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\starlette\middleware\base.py", line 151, in call_next
+    message = await recv_stream.receive()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\anyio\streams\memory.py", line 126, in receive
+    raise EndOfStream from None
+anyio.EndOfStream
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\xuxje\OneDrive\Desktop\recipe-assistant\src\api\middleware.py", line 62, in dispatch
+    return await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\starlette\middleware\base.py", line 159, in call_next
+    raise app_exc
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\starlette\middleware\base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\starlette\routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\starlette\routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\starlette\routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\starlette\routing.py", line 78, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\starlette\routing.py", line 75, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\fastapi\routing.py", line 292, in app
+    solved_result = await solve_dependencies(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+    )
+    ^
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\fastapi\dependencies\utils.py", line 615, in solve_dependencies
+    solved_result = await solve_dependencies(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<9 lines>...
+    )
+    ^
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\fastapi\dependencies\utils.py", line 640, in solve_dependencies
+    solved = await run_in_threadpool(call, **solved_result.values)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\starlette\concurrency.py", line 38, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\anyio\to_thread.py", line 56, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\anyio\_backends\_asyncio.py", line 2476, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "C:\Users\xuxje\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\anyio\_backends\_asyncio.py", line 967, in run
+    result = context.run(func, *args)
+  File "C:\Users\xuxje\OneDrive\Desktop\recipe-assistant\src\auth\dependencies.py", line 24, in get_auth_handler
+    return AuthHandler(settings.JWT_SECRET_KEY, settings.JWT_ALGORITHM)
+TypeError: AuthHandler.__init__() takes from 1 to 2 positional arguments but 3 were given
+2025-11-23 21:55:02,713 - src.api.middleware - INFO - Response: GET /api/v1/recipes - Status: 500 - Time: 0.0131s
+2025-11-23 22:00:55,398 - src.api.middleware - INFO - Middleware configured successfully
+2025-11-23 22:00:55,398 - src.api.middleware - INFO - Exception handlers configured successfully
+2025-11-23 22:00:55,443 - src.api.main - INFO - starting Recipe Assistant API v1.0.0
+2025-11-23 22:00:55,443 - src.api.main - INFO - environment: development
+2025-11-23 22:00:55,444 - src.api.main - INFO - debug mode: False
+2025-11-23 22:00:55,489 - src.database.db_manager - INFO - Database schema initialized successfully
+2025-11-23 22:00:55,489 - src.database.db_manager - INFO - Database Manager initialized: data\recipe_assistant.db
+2025-11-23 22:00:55,490 - src.api.main - INFO - database initialized: {'users': 2, 'recipes': 6, 'meal_plans': 0, 'ratings': 0, 'db_size_mb': 0.29296875}
+2025-11-23 22:00:55,492 - src.database.migration_runner - INFO - Found 2 pending migration(s)
+2025-11-23 22:00:55,492 - src.database.migration_runner - INFO - Applying migration: 001_add_claude_api_key.sql
+2025-11-23 22:00:55,492 - src.database.migration_runner - ERROR - Error applying migration 001_add_claude_api_key.sql: duplicate column name: claude_api_key_encrypted
+2025-11-23 22:00:55,492 - src.database.migration_runner - ERROR - Migration failed: 001_add_claude_api_key.sql. Stopping migration process.
+2025-11-23 22:00:55,493 - src.database.migration_runner - INFO - Applied 0 migration(s)
+2025-11-23 22:00:55,493 - src.api.main - INFO - application startup complete
+2025-11-23 22:00:55,493 - src.api.main - INFO - shutting down application...
+2025-11-23 22:00:55,494 - src.api.main - INFO - database connections closed
+2025-11-23 22:00:55,494 - src.api.main - INFO - application shutdown complete
+2025-11-23 22:01:04,015 - src.api.middleware - INFO - Request: GET /health
+2025-11-23 22:01:04,018 - src.api.middleware - INFO - Response: GET /health - Status: 200 - Time: 0.0021s
+2025-11-23 22:01:35,314 - src.api.main - INFO - shutting down application...
+2025-11-23 22:01:35,318 - src.api.main - INFO - database connections closed
+2025-11-23 22:01:35,319 - src.api.main - INFO - application shutdown complete

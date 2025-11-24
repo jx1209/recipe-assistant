@@ -42,6 +42,12 @@ class UserProfile(BaseModel):
     is_active: bool = True
     is_verified: bool = False
     preferences: Dict[str, Any] = Field(default_factory=dict)
+    # Health/personal info
+    height: Optional[float] = None  # in cm
+    weight: Optional[float] = None  # in kg
+    sex: Optional[str] = None  # male, female, other
+    body_type: Optional[str] = None  # slim, average, athletic, etc.
+    bmi: Optional[float] = None
     
     class Config:
         from_attributes = True
@@ -51,6 +57,12 @@ class UserUpdate(BaseModel):
     """Model for updating user profile"""
     full_name: Optional[str] = Field(None, max_length=100)
     email: Optional[EmailStr] = None
+    # Health/personal info
+    height: Optional[float] = Field(None, ge=0, le=300)  # cm
+    weight: Optional[float] = Field(None, ge=0, le=500)  # kg
+    sex: Optional[str] = Field(None, max_length=20)
+    body_type: Optional[str] = Field(None, max_length=50)
+    bmi: Optional[float] = Field(None, ge=0, le=100)
 
 
 class UserPreferences(BaseModel):
