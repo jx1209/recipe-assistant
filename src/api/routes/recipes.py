@@ -1,8 +1,3 @@
-"""
-recipe api endpoints
-handles recipe crud, search, import, and favorites
-"""
-
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from typing import List, Optional
 import logging
@@ -14,6 +9,7 @@ from src.models.recipe import (
 from src.models.user import UserResponse
 from src.services.recipe_scraper import RecipeScraperService
 from src.services.recipe_manager import RecipeManager
+from src.services.external_recipe_service import ExternalRecipeService
 from src.database import get_db
 from src.auth.dependencies import get_current_user, get_current_user_optional
 from src.config.settings import get_settings
@@ -30,8 +26,11 @@ def get_recipe_manager() -> RecipeManager:
 
 
 def get_recipe_scraper() -> RecipeScraperService:
-    """dependency to get recipe scraper"""
     return RecipeScraperService()
+
+
+def get_external_recipe_service() -> ExternalRecipeService:
+    return ExternalRecipeService()
 
 
 @router.post("/recipes/import", response_model=RecipeResponse, status_code=status.HTTP_201_CREATED)
@@ -202,21 +201,50 @@ async def delete_recipe(
         )
 
 
+@router.get("/recipes/external", response_model=dict)
+async def search_external_recipes(
+    query: Optional[str] = Query(None, max_length=200),
+    limit: int = Query(10, ge=1, le=20),
+    external_service: ExternalRecipeService = Depends(get_external_recipe_service)
+):
+    try:
+        if query:
+            recipes = await external_service.search_recipes(query, limit)
+        else:
+            recipes = await external_service.get_random_recipes(limit)
+        
+        return {
+            "recipes": recipes,
+            "total": len(recipes),
+            "source": "external"
+        }
+        
+    except Exception as e:
+        logger.error(f"error searching external recipes: {e}")
+        return {
+            "recipes": [],
+            "total": 0,
+            "source": "external"
+        }
+
+
 @router.get("/recipes", response_model=dict)
 async def search_recipes(
     query: Optional[str] = Query(None, max_length=200),
     cuisine: Optional[str] = Query(None, max_length=50),
     difficulty: Optional[DifficultyLevel] = None,
     max_time: Optional[int] = Query(None, ge=0, le=1440),
-    tags: Optional[str] = Query(None),  #comma-separated
-    ingredients: Optional[str] = Query(None),  #comma-separated
-    exclude_ingredients: Optional[str] = Query(None),  #comma-separated
+    tags: Optional[str] = Query(None),
+    ingredients: Optional[str] = Query(None),
+    exclude_ingredients: Optional[str] = Query(None),
     min_rating: Optional[float] = Query(None, ge=0, le=5),
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
     sort_by: str = Query("created_at", regex="^(created_at|rating|time|title)$"),
+    include_external: bool = Query(False),
     current_user: Optional[UserResponse] = Depends(get_current_user_optional),
-    recipe_manager: RecipeManager = Depends(get_recipe_manager)
+    recipe_manager: RecipeManager = Depends(get_recipe_manager),
+    external_service: ExternalRecipeService = Depends(get_external_recipe_service)
 ):
     """
     search recipes with filters
@@ -246,12 +274,23 @@ async def search_recipes(
         user_id = current_user.id if current_user else None
         recipes, total = await recipe_manager.search_recipes(search_params, user_id)
         
+        external_recipes = []
+        if include_external and query:
+            try:
+                external_recipes = await external_service.search_recipes(query, limit=10)
+            except Exception as e:
+                logger.error(f"error fetching external recipes: {e}")
+        
+        all_recipes = recipes + external_recipes
+        total_count = total + len(external_recipes)
+        
         return {
-            "recipes": recipes,
-            "total": total,
+            "recipes": all_recipes,
+            "total": total_count,
             "limit": limit,
             "offset": offset,
-            "has_more": (offset + limit) < total
+            "has_more": (offset + limit) < total,
+            "external_count": len(external_recipes)
         }
         
     except Exception as e:

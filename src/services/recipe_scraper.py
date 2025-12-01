@@ -1,9 +1,3 @@
-"""
-recipe scraper service
-imports recipes from urls using recipe-scrapers library
-supports 100+ recipe websites automatically
-"""
-
 from typing import Optional, Dict, Any
 from recipe_scrapers import scrape_me, WebsiteNotImplementedError, NoSchemaFoundInWildMode
 import logging
@@ -14,10 +8,9 @@ logger = logging.getLogger(__name__)
 
 
 class RecipeScraperService:
-    """service for scraping recipes from urls"""
     
     def __init__(self):
-        self.supported_sites_count = 100  #recipe-scrapers supports 100+ sites
+        self.supported_sites_count = 100
     
     async def scrape_recipe_from_url(self, url: str) -> Optional[RecipeCreate]:
         """
