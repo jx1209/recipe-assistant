@@ -1,9 +1,5 @@
 'use client'
 
-/**
- * search bar component
- */
-
 import { useState } from 'react'
 import { Search } from 'lucide-react'
 
@@ -38,7 +34,7 @@ export function SearchBar({ onSearch, placeholder = 'search recipes...' }: Searc
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         onKeyPress={handleKeyPress}
-        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition"
+        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition text-gray-900 bg-white"
       />
     </div>
   )

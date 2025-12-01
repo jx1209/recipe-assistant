@@ -1,9 +1,5 @@
 'use client'
 
-/**
- * user profile page with enhanced personal info and preferences
- */
-
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
@@ -70,6 +66,7 @@ function ProfileContent() {
       setBodyType(user.body_type || '')
       setDietaryRestrictions(user.preferences?.dietary_restrictions || [])
       setAllergies(user.preferences?.allergies || [])
+      setFavoriteCuisines(user.preferences?.favorite_cuisines || [])
     }
   }, [user])
 
@@ -169,6 +166,11 @@ function ProfileContent() {
              !allergies.includes(option)
   )
 
+  const filteredCuisineOptions = commonCuisines.filter(
+    option => option.toLowerCase().includes(cuisineSearchTerm.toLowerCase()) &&
+             !favoriteCuisines.includes(option)
+  )
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -180,7 +182,7 @@ function ProfileContent() {
   const firstName = user?.full_name?.split(' ')[0] || 'Your'
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-yellow-50 px-4 sm:px-6 lg:px-8 py-12">
+    <div className="min-h-screen bg-gradient-to-br from-white via-primary-50/30 to-secondary-50/20 px-4 sm:px-6 lg:px-8 py-12">
       <div className="max-w-4xl mx-auto">
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-gray-900">Profile Settings</h1>
@@ -192,7 +194,7 @@ function ProfileContent() {
           <Card variant="elevated">
             <CardHeader>
               <div className="flex items-center space-x-3">
-                <div className="h-14 w-14 bg-gradient-to-br from-orange-400 to-yellow-400 rounded-full flex items-center justify-center">
+                <div className="h-14 w-14 bg-gradient-primary rounded-full flex items-center justify-center shadow-lg">
                   <User className="h-7 w-7 text-white" />
                 </div>
                 <div>
@@ -354,7 +356,7 @@ function ProfileContent() {
                   <Button 
                     onClick={handleSave} 
                     isLoading={isLoading}
-                    className="bg-orange-600 hover:bg-orange-700"
+                    variant="gradient"
                   >
                     save changes
                   </Button>
@@ -383,12 +385,12 @@ function ProfileContent() {
           <Card variant="elevated">
             <CardHeader>
               <div className="flex items-center space-x-3">
-                <div className="h-14 w-14 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full flex items-center justify-center">
+                <div className="h-14 w-14 bg-gradient-secondary rounded-full flex items-center justify-center shadow-lg">
                   <Settings className="h-7 w-7 text-white" />
                 </div>
                 <div>
                   <h2 className="text-2xl font-bold text-gray-900">preferences</h2>
-                  <p className="text-sm text-gray-500">dietary restrictions and allergies</p>
+                  <p className="text-sm text-gray-500">dietary restrictions, allergies, and favorite cuisines</p>
                 </div>
               </div>
             </CardHeader>
@@ -408,12 +410,12 @@ function ProfileContent() {
                         dietaryRestrictions.map((restriction) => (
                           <span
                             key={restriction}
-                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-orange-500 text-white rounded-full text-sm font-medium shadow-sm"
+                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-primary-600 text-white rounded-full text-sm font-medium shadow-sm"
                           >
                             {restriction}
                             <button
                               onClick={() => removeDietaryRestriction(restriction)}
-                              className="hover:bg-orange-600 rounded-full p-0.5 transition-colors"
+                              className="hover:bg-primary-700 rounded-full p-0.5 transition-colors"
                             >
                               <X className="h-3 w-3" />
                             </button>
@@ -437,7 +439,7 @@ function ProfileContent() {
                           }
                         }}
                         placeholder="Search or type to add (press Enter)"
-                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-900"
+                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-gray-900"
                       />
                     </div>
 
@@ -448,7 +450,7 @@ function ProfileContent() {
                           <button
                             key={option}
                             onClick={() => addDietaryRestriction(option)}
-                            className="px-3 py-1.5 bg-white border-2 border-orange-300 text-orange-700 rounded-full text-sm hover:bg-orange-50 transition-colors font-medium"
+                            className="px-3 py-1.5 bg-white border-2 border-primary-300 text-primary-700 rounded-full text-sm hover:bg-primary-50 transition-colors font-medium"
                           >
                             + {option}
                           </button>
@@ -456,7 +458,7 @@ function ProfileContent() {
                         {searchTerm && !commonDietaryRestrictions.includes(searchTerm.toLowerCase()) && (
                           <button
                             onClick={() => addDietaryRestriction(searchTerm)}
-                            className="px-3 py-1.5 bg-orange-100 border-2 border-orange-400 text-orange-800 rounded-full text-sm hover:bg-orange-200 transition-colors font-medium"
+                            className="px-3 py-1.5 bg-primary-100 border-2 border-primary-400 text-primary-800 rounded-full text-sm hover:bg-primary-200 transition-colors font-medium"
                           >
                             + Add "{searchTerm}"
                           </button>
@@ -468,12 +470,97 @@ function ProfileContent() {
                   <div className="flex flex-wrap gap-2">
                     {dietaryRestrictions.length > 0 ? (
                       dietaryRestrictions.map((restriction) => (
-                        <span key={restriction} className="px-3 py-1.5 bg-orange-100 text-orange-700 rounded-full text-sm font-medium">
+                        <span key={restriction} className="px-3 py-1.5 bg-primary-100 text-primary-700 rounded-full text-sm font-medium">
                           {restriction}
                         </span>
                       ))
                     ) : (
                       <p className="text-gray-500 text-sm">no dietary restrictions set</p>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Favorite Cuisines */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                  Favorite Cuisines
+                </label>
+                
+                {isEditingPreferences ? (
+                  <div className="space-y-3">
+                    {/* Selected tags */}
+                    <div className="flex flex-wrap gap-2 min-h-[40px] p-3 border border-gray-200 rounded-lg bg-gray-50">
+                      {favoriteCuisines.length > 0 ? (
+                        favoriteCuisines.map((cuisine) => (
+                          <span
+                            key={cuisine}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-gradient-secondary text-white rounded-full text-sm font-medium shadow-sm"
+                          >
+                            {cuisine}
+                            <button
+                              onClick={() => removeCuisine(cuisine)}
+                              className="hover:bg-secondary-700 rounded-full p-0.5 transition-colors"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </span>
+                        ))
+                      ) : (
+                        <p className="text-gray-400 text-sm">No favorite cuisines selected</p>
+                      )}
+                    </div>
+
+                    {/* Search box */}
+                    <div className="relative">
+                      <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                      <input
+                        type="text"
+                        value={cuisineSearchTerm}
+                        onChange={(e) => setCuisineSearchTerm(e.target.value)}
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter' && cuisineSearchTerm.trim()) {
+                            addCuisine(cuisineSearchTerm)
+                          }
+                        }}
+                        placeholder="Search or type to add (press Enter)"
+                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-secondary-500 focus:border-secondary-500 text-gray-900"
+                      />
+                    </div>
+
+                    {/* Suggestions */}
+                    {cuisineSearchTerm && (
+                      <div className="flex flex-wrap gap-2">
+                        {filteredCuisineOptions.map((option) => (
+                          <button
+                            key={option}
+                            onClick={() => addCuisine(option)}
+                            className="px-3 py-1.5 bg-white border-2 border-secondary-300 text-secondary-700 rounded-full text-sm hover:bg-secondary-50 transition-colors font-medium capitalize"
+                          >
+                            + {option}
+                          </button>
+                        ))}
+                        {cuisineSearchTerm && !commonCuisines.includes(cuisineSearchTerm.toLowerCase()) && (
+                          <button
+                            onClick={() => addCuisine(cuisineSearchTerm)}
+                            className="px-3 py-1.5 bg-secondary-100 border-2 border-secondary-400 text-secondary-800 rounded-full text-sm hover:bg-secondary-200 transition-colors font-medium"
+                          >
+                            + Add "{cuisineSearchTerm}"
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {favoriteCuisines.length > 0 ? (
+                      favoriteCuisines.map((cuisine) => (
+                        <span key={cuisine} className="px-3 py-1.5 bg-secondary-100 text-secondary-700 rounded-full text-sm font-medium capitalize">
+                          {cuisine}
+                        </span>
+                      ))
+                    ) : (
+                      <p className="text-gray-500 text-sm">no favorite cuisines set</p>
                     )}
                   </div>
                 )}
@@ -571,7 +658,7 @@ function ProfileContent() {
                   <Button 
                     onClick={handleSavePreferences} 
                     isLoading={isLoading}
-                    className="bg-purple-600 hover:bg-purple-700"
+                    variant="gradient"
                   >
                     save preferences
                   </Button>
@@ -579,6 +666,7 @@ function ProfileContent() {
                     setIsEditingPreferences(false)
                     setDietaryRestrictions(user?.preferences?.dietary_restrictions || [])
                     setAllergies(user?.preferences?.allergies || [])
+                    setFavoriteCuisines(user?.preferences?.favorite_cuisines || [])
                   }}>
                     cancel
                   </Button>

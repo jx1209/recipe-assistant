@@ -1,9 +1,5 @@
 'use client'
 
-/**
- * recipe search page with filters and sorting
- */
-
 import { useState, useEffect } from 'react'
 import { recipeApi, Recipe, shoppingListApi } from '@/lib/api'
 import { RecipeCard } from '@/components/RecipeCard'
@@ -245,7 +241,7 @@ export default function SearchPage() {
                     value={maxPrepTime}
                     onChange={(e) => setMaxPrepTime(e.target.value)}
                     placeholder="e.g. 30"
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all text-gray-900 bg-white"
                   />
                 </div>
               </div>
@@ -332,6 +328,8 @@ export default function SearchPage() {
                     selectable={selectedRecipes.size > 0}
                     selected={selectedRecipes.has(recipe.id)}
                     onSelect={toggleRecipeSelection}
+                    external={recipe.external}
+                    sourceName={recipe.source_name}
                   />
                 </div>
               ))}

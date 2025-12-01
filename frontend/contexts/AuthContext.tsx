@@ -1,10 +1,5 @@
 'use client'
 
-/**
- * authentication context provider
- * manages user authentication state across the app
- */
-
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { authApi, UserProfile } from '@/lib/api'
 import { useRouter } from 'next/navigation'
@@ -30,7 +25,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const isAuthenticated = !!user
 
-  // load user on mount
   useEffect(() => {
     loadUser()
   }, [])

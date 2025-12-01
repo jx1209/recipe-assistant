@@ -1,9 +1,5 @@
 'use client'
 
-/**
- * home page with recipe recommendations
- */
-
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { recipeApi, Recipe } from '@/lib/api'
