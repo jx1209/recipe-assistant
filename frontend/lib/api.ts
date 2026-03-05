@@ -22,7 +22,11 @@ apiClient.interceptors.request.use(
   (config) => {
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('access_token')
-      if (token && config.headers) {
+      if (token) {
+        // ensure headers object exists before setting authorization
+        if (!config.headers) {
+          config.headers = {} as any
+        }
         config.headers.Authorization = `Bearer ${token}`
       }
     }
@@ -43,32 +47,35 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true
 
-      try {
-        const refreshToken = localStorage.getItem('refresh_token')
-        if (refreshToken) {
-          const response = await axios.post(
-            `${API_BASE_URL}/auth/refresh`,
-            { refresh_token: refreshToken }
-          )
+      // only attempt token refresh in browser environment
+      if (typeof window !== 'undefined') {
+        try {
+          const refreshToken = localStorage.getItem('refresh_token')
+          if (refreshToken) {
+            const response = await axios.post(
+              `${API_BASE_URL}/auth/refresh`,
+              { refresh_token: refreshToken }
+            )
 
-          const { access_token, refresh_token: newRefreshToken } = response.data
-          localStorage.setItem('access_token', access_token)
-          localStorage.setItem('refresh_token', newRefreshToken)
+            const { access_token, refresh_token: newRefreshToken } = response.data
+            localStorage.setItem('access_token', access_token)
+            localStorage.setItem('refresh_token', newRefreshToken)
 
-          // retry original request with new token
-          if (originalRequest.headers) {
+            // retry original request with new token
+            // ensure headers object exists before setting authorization
+            if (!originalRequest.headers) {
+              originalRequest.headers = {}
+            }
             originalRequest.headers.Authorization = `Bearer ${access_token}`
+            return apiClient(originalRequest)
           }
-          return apiClient(originalRequest)
-        }
-      } catch (refreshError) {
-        // refresh failed - clear tokens and redirect to login
-        localStorage.removeItem('access_token')
-        localStorage.removeItem('refresh_token')
-        if (typeof window !== 'undefined') {
+        } catch (refreshError) {
+          // refresh failed - clear tokens and redirect to login
+          localStorage.removeItem('access_token')
+          localStorage.removeItem('refresh_token')
           window.location.href = '/auth/login'
+          return Promise.reject(refreshError)
         }
-        return Promise.reject(refreshError)
       }
     }
 
