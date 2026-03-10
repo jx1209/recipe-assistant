@@ -410,6 +410,7 @@ export const shoppingListApi = {
     items?: ShoppingListItem[]
     recipe_ids?: number[]
     exclude_pantry?: boolean
+    group_by_category?: boolean
   }): Promise<ShoppingList> => {
     const response = await apiClient.post('/shopping-lists', data)
     return response.data

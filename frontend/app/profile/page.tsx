@@ -271,9 +271,9 @@ function ProfileContent() {
                         <div className="flex items-center gap-2">
                           <span className="text-2xl font-bold text-orange-600">{bmi}</span>
                           <span className="text-sm text-gray-500">
-                            {parseFloat(bmi) < 18.5 ? '(Underweight)' :
-                             parseFloat(bmi) < 25 ? '(Normal)' :
-                             parseFloat(bmi) < 30 ? '(Overweight)' : '(Obese)'}
+                            {parseFloat(String(bmi)) < 18.5 ? '(Underweight)' :
+                             parseFloat(String(bmi)) < 25 ? '(Normal)' :
+                             parseFloat(String(bmi)) < 30 ? '(Overweight)' : '(Obese)'}
                           </span>
                         </div>
                       </div>

@@ -45,7 +45,7 @@ export default function SearchPage() {
       if (selectedTags.length > 0) params.tags = selectedTags
 
       const data = searchQuery 
-        ? await recipeApi.searchRecipes(searchQuery, params)
+        ? await recipeApi.searchRecipes(searchQuery)
         : await recipeApi.getRecipes(params)
       
       setRecipes(data)
