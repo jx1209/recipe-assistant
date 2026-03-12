@@ -23,7 +23,7 @@ export default function ShoppingListPage() {
   }, [])
 
   useEffect(() => {
-    if (selectedList && selectedList.recipe_ids.length > 0) {
+    if (selectedList && selectedList.recipe_ids && selectedList.recipe_ids.length > 0) {
       loadRecipes(selectedList.recipe_ids)
       setSelectedRecipeTab('all')
     }
@@ -231,11 +231,11 @@ export default function ShoppingListPage() {
             {selectedList && (
               <div className="lg:col-span-2 space-y-6">
                 {/* Recipe Cards */}
-                {selectedList.recipe_ids.length > 0 && (
+                {selectedList.recipe_ids && selectedList.recipe_ids.length > 0 && (
                   <div>
                     <h2 className="text-lg font-semibold text-gray-700 mb-4">Recipes</h2>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
-                      {selectedList.recipe_ids.map((recipeId) => {
+                      {selectedList.recipe_ids?.map((recipeId) => {
                         const recipe = recipes.get(recipeId)
                         if (!recipe) return null
 
@@ -289,7 +289,7 @@ export default function ShoppingListPage() {
                       >
                         All Items ({selectedList.items.length})
                       </button>
-                      {selectedList.recipe_ids.map((recipeId) => {
+                      {selectedList.recipe_ids?.map((recipeId) => {
                         const recipe = recipes.get(recipeId)
                         const itemCount = selectedList.items.filter(
                           (item) => item.recipe_id === recipeId

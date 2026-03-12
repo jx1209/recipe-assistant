@@ -113,18 +113,23 @@ export interface Recipe {
   servings: number
   difficulty: 'Easy' | 'Medium' | 'Hard' | null
   cuisine: string | null
+  meal_type?: string | null
   tags: string[]
   created_by: number
   created_at: string
   updated_at: string
   average_rating: number | null
   rating_count: number
+  total_ratings?: number  // alias for rating_count
   nutrition?: RecipeNutrition | null
+  is_favorite?: boolean
+  external?: boolean
 }
 
 export interface RecipeIngredient {
   name: string
   quantity?: number | null
+  amount?: number | null  // alias for quantity for backward compatibility
   unit?: string | null
   notes?: string | null
 }
@@ -181,19 +186,27 @@ export interface ShoppingList {
   user_id: number
   name: string
   items: ShoppingListItem[]
+  recipe_ids?: number[]
   created_at: string
   updated_at: string
+  checked_items?: number
+  total_items?: number
 }
 
 export interface ShoppingListItem {
   id?: number
   ingredient_name: string
+  ingredient?: string  // alias for ingredient_name
   quantity?: number | null
   unit?: string | null
+  notes?: string | null
   checked: boolean
   category?: string | null
   recipe_id?: number | null
 }
+
+// export alias for backward compatibility  
+export type ShoppingItem = ShoppingListItem
 
 export interface Rating {
   id: number
@@ -281,6 +294,11 @@ export const recipeApi = {
 
   deleteRecipe: async (id: number): Promise<void> => {
     await apiClient.delete(`/recipes/${id}`)
+  },
+
+  toggleFavorite: async (id: number): Promise<Recipe> => {
+    const response = await apiClient.post(`/recipes/${id}/favorite`)
+    return response.data
   },
 
   importRecipe: async (url: string): Promise<Recipe> => {
@@ -390,6 +408,9 @@ export const shoppingListApi = {
   createShoppingList: async (data: {
     name: string
     items?: ShoppingListItem[]
+    recipe_ids?: number[]
+    exclude_pantry?: boolean
+    group_by_category?: boolean
   }): Promise<ShoppingList> => {
     const response = await apiClient.post('/shopping-lists', data)
     return response.data

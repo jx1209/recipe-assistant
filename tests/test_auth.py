@@ -19,7 +19,7 @@ class TestPasswordHashing:
     def test_password_hash_creation(self, auth_handler: AuthHandler):
         """test creating a password hash"""
         password = "SecurePassword123!"
-        hashed = auth_handler.get_password_hash(password)
+        hashed = auth_handler.hash_password(password)
         
         assert hashed is not None
         assert hashed != password
@@ -29,7 +29,7 @@ class TestPasswordHashing:
     def test_password_verification_success(self, auth_handler: AuthHandler):
         """test verifying correct password"""
         password = "SecurePassword123!"
-        hashed = auth_handler.get_password_hash(password)
+        hashed = auth_handler.hash_password(password)
         
         assert auth_handler.verify_password(password, hashed) is True
     
@@ -37,15 +37,15 @@ class TestPasswordHashing:
         """test verifying incorrect password"""
         password = "SecurePassword123!"
         wrong_password = "WrongPassword456!"
-        hashed = auth_handler.get_password_hash(password)
+        hashed = auth_handler.hash_password(password)
         
         assert auth_handler.verify_password(wrong_password, hashed) is False
     
     def test_same_password_different_hashes(self, auth_handler: AuthHandler):
         """test that same password generates different hashes (salt)"""
         password = "SecurePassword123!"
-        hash1 = auth_handler.get_password_hash(password)
-        hash2 = auth_handler.get_password_hash(password)
+        hash1 = auth_handler.hash_password(password)
+        hash2 = auth_handler.hash_password(password)
         
         assert hash1 != hash2
         assert auth_handler.verify_password(password, hash1) is True
@@ -178,7 +178,7 @@ class TestAuthHandler:
         """test complete authentication flow"""
         #user registers with password
         password = "SecurePassword123!"
-        hashed_password = auth_handler.get_password_hash(password)
+        hashed_password = auth_handler.hash_password(password)
         
         #user logs in
         assert auth_handler.verify_password(password, hashed_password) is True

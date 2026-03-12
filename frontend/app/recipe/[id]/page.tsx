@@ -43,7 +43,7 @@ export default function RecipeDetailPage() {
       setIsLoading(true)
       const data = await recipeApi.getRecipe(id)
       setRecipe(data)
-      setIsFavorite(data.is_favorite)
+      setIsFavorite(data.is_favorite || false)
     } catch (error) {
       console.error('failed to load recipe:', error)
       toast.error('failed to load recipe')

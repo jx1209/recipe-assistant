@@ -21,6 +21,8 @@ type RecipeCardProps = {
   selectable?: boolean
   selected?: boolean
   onSelect?: (id: number) => void
+  external?: boolean
+  sourceName?: string | null
 }
 
 export function RecipeCard({ 

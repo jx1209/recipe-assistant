@@ -129,7 +129,7 @@ def sample_user_credentials() -> dict:
 async def registered_user(test_db: DatabaseManager, sample_user_data: dict, auth_handler: AuthHandler) -> dict:
     """create a registered user in the database"""
     #hash password
-    hashed_password = auth_handler.get_password_hash(sample_user_data["password"])
+    hashed_password = auth_handler.hash_password(sample_user_data["password"])
     
     #insert user
     user_id = await test_db.create_user(
