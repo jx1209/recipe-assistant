@@ -311,18 +311,9 @@ export default function PlannerPage() {
                           onClick={() => selectRecipeForSlot(recipe)}
                           className="text-left hover:scale-102 transition-transform"
                         >
-                          <RecipeCard
-                            id={recipe.id}
-                            title={recipe.title}
-                            description={recipe.description}
-                            tags={recipe.tags}
-                            prepTime={recipe.prep_time}
-                            cookTime={recipe.cook_time}
-                            servings={recipe.servings}
-                            averageRating={recipe.average_rating}
-                            imageUrl={recipe.image_url}
-                            difficulty={recipe.difficulty}
-                          />
+                        <RecipeCard
+                          recipe={recipe}
+                        />
                         </button>
                       ))}
                     </div>

@@ -315,21 +315,10 @@ export default function SearchPage() {
               {recipes.map((recipe, index) => (
                 <div key={recipe.id} className="animate-fade-in-up" style={{ animationDelay: `${index * 0.05}s` }}>
                   <RecipeCard
-                    id={recipe.id}
-                    title={recipe.title}
-                    description={recipe.description}
-                    tags={recipe.tags}
-                    prepTime={recipe.prep_time}
-                    cookTime={recipe.cook_time}
-                    servings={recipe.servings}
-                    averageRating={recipe.average_rating}
-                    imageUrl={recipe.image_url}
-                    difficulty={recipe.difficulty}
+                    recipe={recipe}
                     selectable={selectedRecipes.size > 0}
                     selected={selectedRecipes.has(recipe.id)}
                     onSelect={toggleRecipeSelection}
-                    external={recipe.external}
-                    sourceName={recipe.source_name}
                   />
                 </div>
               ))}
