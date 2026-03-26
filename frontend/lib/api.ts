@@ -274,7 +274,8 @@ export const recipeApi = {
     offset?: number
   }): Promise<Recipe[]> => {
     const response = await apiClient.get('/recipes', { params })
-    return response.data
+    // api returns { recipes: [...] }, extract the array
+    return response.data.recipes || []
   },
 
   getRecipe: async (id: number): Promise<Recipe> => {

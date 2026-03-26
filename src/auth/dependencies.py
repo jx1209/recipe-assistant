@@ -21,7 +21,7 @@ security_optional = HTTPBearer(auto_error=False)
 
 def get_auth_handler() -> AuthHandler:
     """dependency to get auth handler"""
-    return AuthHandler(settings.JWT_SECRET_KEY, settings.JWT_ALGORITHM)
+    return AuthHandler()
 
 
 async def get_current_user(
