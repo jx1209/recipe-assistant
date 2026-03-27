@@ -3273,3 +3273,152 @@ TypeError: __init__() takes from 1 to 2 positional arguments but 3 were given
 2026-03-23 15:51:29,783 - src.api.middleware - INFO - Response: GET /api/v1/recipes - Status: 200 - Time: 0.0036s
 2026-03-23 15:51:29,785 - src.api.middleware - INFO - Request: GET /api/v1/recipes
 2026-03-23 15:51:29,789 - src.api.middleware - INFO - Response: GET /api/v1/recipes - Status: 200 - Time: 0.0045s
+2026-03-26 09:53:20,230 - src.api.middleware - INFO - Middleware configured successfully
+2026-03-26 09:53:20,231 - src.api.middleware - INFO - Exception handlers configured successfully
+2026-03-26 09:53:20,289 - src.api.main - INFO - starting Recipe Assistant API v1.0.0
+2026-03-26 09:53:20,290 - src.api.main - INFO - environment: development
+2026-03-26 09:53:20,290 - src.api.main - INFO - debug mode: False
+2026-03-26 09:53:20,299 - src.database.db_manager - INFO - Database schema initialized successfully
+2026-03-26 09:53:20,299 - src.database.db_manager - INFO - Database Manager initialized: data/recipe_assistant.db
+2026-03-26 09:53:20,300 - src.api.main - INFO - database initialized: {'users': 1, 'recipes': 6, 'meal_plans': 0, 'ratings': 0, 'db_size_mb': 0.2890625}
+2026-03-26 09:53:20,301 - src.database.migration_runner - INFO - Found 2 pending migration(s)
+2026-03-26 09:53:20,301 - src.database.migration_runner - INFO - Applying migration: 001_add_claude_api_key.sql
+2026-03-26 09:53:20,302 - src.database.migration_runner - ERROR - Error applying migration 001_add_claude_api_key.sql: duplicate column name: claude_api_key_encrypted
+2026-03-26 09:53:20,302 - src.database.migration_runner - ERROR - Migration failed: 001_add_claude_api_key.sql. Stopping migration process.
+2026-03-26 09:53:20,303 - src.database.migration_runner - INFO - Applied 0 migration(s)
+2026-03-26 09:53:20,304 - src.api.main - INFO - application startup complete
+2026-03-26 09:57:01,907 - src.api.middleware - INFO - Request: GET /
+2026-03-26 09:57:01,912 - src.api.middleware - INFO - Response: GET / - Status: 200 - Time: 0.0053s
+2026-03-26 09:57:02,317 - src.api.middleware - INFO - Request: GET /favicon.ico
+2026-03-26 09:57:02,320 - src.api.middleware - INFO - Response: GET /favicon.ico - Status: 404 - Time: 0.0024s
+2026-03-26 09:59:49,689 - src.api.middleware - INFO - Request: GET /api/v1/recipes
+2026-03-26 09:59:49,753 - src.api.middleware - INFO - Response: GET /api/v1/recipes - Status: 200 - Time: 0.0658s
+2026-03-26 09:59:49,757 - src.api.middleware - INFO - Request: GET /api/v1/recipes
+2026-03-26 09:59:49,761 - src.api.middleware - INFO - Response: GET /api/v1/recipes - Status: 200 - Time: 0.0037s
+2026-03-26 09:59:49,764 - src.api.middleware - INFO - Request: GET /api/v1/recipes
+2026-03-26 09:59:49,766 - src.api.middleware - INFO - Response: GET /api/v1/recipes - Status: 200 - Time: 0.0026s
+2026-03-26 09:59:49,768 - src.api.middleware - INFO - Request: GET /api/v1/recipes
+2026-03-26 09:59:49,773 - src.api.middleware - INFO - Response: GET /api/v1/recipes - Status: 200 - Time: 0.0047s
+2026-03-26 10:00:18,629 - src.api.middleware - INFO - Request: GET /api/v1/recipes/6
+2026-03-26 10:00:18,637 - src.api.middleware - INFO - Response: GET /api/v1/recipes/6 - Status: 200 - Time: 0.0087s
+2026-03-26 10:00:18,641 - src.api.middleware - INFO - Request: GET /api/v1/recipes/6
+2026-03-26 10:00:18,646 - src.api.middleware - INFO - Response: GET /api/v1/recipes/6 - Status: 200 - Time: 0.0052s
+2026-03-26 10:03:17,193 - src.api.middleware - INFO - Request: GET /api/v1/recipes
+2026-03-26 10:03:17,202 - src.api.middleware - INFO - Response: GET /api/v1/recipes - Status: 200 - Time: 0.0097s
+2026-03-26 10:03:17,208 - src.api.middleware - INFO - Request: GET /api/v1/recipes
+2026-03-26 10:03:17,212 - src.api.middleware - INFO - Response: GET /api/v1/recipes - Status: 200 - Time: 0.0044s
+2026-03-26 10:04:12,942 - src.api.middleware - INFO - Request: GET /api/v1/recipes
+2026-03-26 10:04:12,956 - src.api.middleware - INFO - Response: GET /api/v1/recipes - Status: 200 - Time: 0.0150s
+2026-03-26 10:04:12,959 - src.api.middleware - INFO - Request: GET /api/v1/recipes
+2026-03-26 10:04:12,962 - src.api.middleware - INFO - Response: GET /api/v1/recipes - Status: 200 - Time: 0.0024s
+2026-03-26 10:04:12,963 - src.api.middleware - INFO - Request: GET /api/v1/recipes
+2026-03-26 10:04:12,965 - src.api.middleware - INFO - Response: GET /api/v1/recipes - Status: 200 - Time: 0.0021s
+2026-03-26 10:04:12,968 - src.api.middleware - INFO - Request: GET /api/v1/recipes
+2026-03-26 10:04:12,975 - src.api.middleware - INFO - Response: GET /api/v1/recipes - Status: 200 - Time: 0.0067s
+2026-03-26 10:06:19,460 - src.api.middleware - INFO - Request: GET /api/v1/recipes/external
+2026-03-26 10:06:19,470 - src.api.middleware - INFO - Response: GET /api/v1/recipes/external - Status: 422 - Time: 0.0103s
+2026-03-26 10:06:37,911 - src.api.middleware - INFO - Request: GET /api/v1/recipes
+2026-03-26 10:06:37,919 - src.api.middleware - INFO - Response: GET /api/v1/recipes - Status: 200 - Time: 0.0090s
+2026-03-26 10:06:37,923 - src.api.middleware - INFO - Request: GET /api/v1/recipes
+2026-03-26 10:06:37,927 - src.api.middleware - INFO - Response: GET /api/v1/recipes - Status: 200 - Time: 0.0042s
+2026-03-26 10:06:37,929 - src.api.middleware - INFO - Request: GET /api/v1/recipes
+2026-03-26 10:06:37,932 - src.api.middleware - INFO - Response: GET /api/v1/recipes - Status: 200 - Time: 0.0021s
+2026-03-26 10:06:37,934 - src.api.middleware - INFO - Request: GET /api/v1/recipes
+2026-03-26 10:06:37,938 - src.api.middleware - INFO - Response: GET /api/v1/recipes - Status: 200 - Time: 0.0040s
+2026-03-26 10:06:43,901 - src.api.middleware - INFO - Request: GET /api/v1/external-recipes
+2026-03-26 10:06:43,903 - src.api.middleware - INFO - Response: GET /api/v1/external-recipes - Status: 404 - Time: 0.0020s
+2026-03-26 10:06:58,009 - src.api.main - INFO - shutting down application...
+2026-03-26 10:06:58,011 - src.api.main - INFO - database connections closed
+2026-03-26 10:06:58,012 - src.api.main - INFO - application shutdown complete
+2026-03-26 10:06:59,481 - src.api.middleware - INFO - Middleware configured successfully
+2026-03-26 10:06:59,481 - src.api.middleware - INFO - Exception handlers configured successfully
+2026-03-26 10:06:59,538 - src.api.main - INFO - starting Recipe Assistant API v1.0.0
+2026-03-26 10:06:59,538 - src.api.main - INFO - environment: development
+2026-03-26 10:06:59,538 - src.api.main - INFO - debug mode: False
+2026-03-26 10:06:59,553 - src.database.db_manager - INFO - Database schema initialized successfully
+2026-03-26 10:06:59,553 - src.database.db_manager - INFO - Database Manager initialized: data/recipe_assistant.db
+2026-03-26 10:06:59,553 - src.api.main - INFO - database initialized: {'users': 1, 'recipes': 6, 'meal_plans': 0, 'ratings': 0, 'db_size_mb': 0.2890625}
+2026-03-26 10:06:59,554 - src.database.migration_runner - INFO - Found 2 pending migration(s)
+2026-03-26 10:06:59,554 - src.database.migration_runner - INFO - Applying migration: 001_add_claude_api_key.sql
+2026-03-26 10:06:59,554 - src.database.migration_runner - ERROR - Error applying migration 001_add_claude_api_key.sql: duplicate column name: claude_api_key_encrypted
+2026-03-26 10:06:59,554 - src.database.migration_runner - ERROR - Migration failed: 001_add_claude_api_key.sql. Stopping migration process.
+2026-03-26 10:06:59,554 - src.database.migration_runner - INFO - Applied 0 migration(s)
+2026-03-26 10:06:59,554 - src.api.main - INFO - application startup complete
+2026-03-26 10:12:51,368 - src.api.middleware - INFO - Request: GET /api/v1/external-recipes
+2026-03-26 10:12:53,211 - httpx - INFO - HTTP Request: GET https://www.themealdb.com/api/json/v1/1/random.php "HTTP/1.1 200 OK"
+2026-03-26 10:12:53,458 - httpx - INFO - HTTP Request: GET https://www.themealdb.com/api/json/v1/1/random.php "HTTP/1.1 200 OK"
+2026-03-26 10:12:54,541 - httpx - INFO - HTTP Request: GET https://www.themealdb.com/api/json/v1/1/random.php "HTTP/1.1 200 OK"
+2026-03-26 10:12:54,545 - src.api.middleware - INFO - Response: GET /api/v1/external-recipes - Status: 200 - Time: 3.1768s
+2026-03-26 10:15:15,023 - src.api.middleware - INFO - Request: GET /api/v1/recipes
+2026-03-26 10:15:15,050 - src.api.middleware - INFO - Response: GET /api/v1/recipes - Status: 200 - Time: 0.0278s
+2026-03-26 10:15:15,054 - src.api.middleware - INFO - Request: GET /api/v1/recipes
+2026-03-26 10:15:15,056 - src.api.middleware - INFO - Response: GET /api/v1/recipes - Status: 200 - Time: 0.0022s
+2026-03-26 10:15:15,058 - src.api.middleware - INFO - Request: GET /api/v1/recipes
+2026-03-26 10:15:15,065 - src.api.middleware - INFO - Response: GET /api/v1/recipes - Status: 200 - Time: 0.0065s
+2026-03-26 10:15:15,067 - src.api.middleware - INFO - Request: GET /api/v1/recipes
+2026-03-26 10:15:15,074 - src.api.middleware - INFO - Response: GET /api/v1/recipes - Status: 200 - Time: 0.0072s
+2026-03-26 10:15:24,801 - src.api.middleware - INFO - Request: GET /api/v1/recipes
+2026-03-26 10:15:24,822 - src.api.middleware - INFO - Response: GET /api/v1/recipes - Status: 200 - Time: 0.0215s
+2026-03-26 10:15:24,827 - src.api.middleware - INFO - Request: GET /api/v1/recipes
+2026-03-26 10:15:24,830 - src.api.middleware - INFO - Response: GET /api/v1/recipes - Status: 200 - Time: 0.0026s
+2026-03-26 10:15:24,832 - src.api.middleware - INFO - Request: GET /api/v1/recipes
+2026-03-26 10:15:24,834 - src.api.middleware - INFO - Response: GET /api/v1/recipes - Status: 200 - Time: 0.0027s
+2026-03-26 10:15:24,837 - src.api.middleware - INFO - Request: GET /api/v1/recipes
+2026-03-26 10:15:24,841 - src.api.middleware - INFO - Response: GET /api/v1/recipes - Status: 200 - Time: 0.0045s
+2026-03-26 10:15:25,753 - src.api.middleware - INFO - Request: GET /api/v1/recipes
+2026-03-26 10:15:25,758 - src.api.middleware - INFO - Response: GET /api/v1/recipes - Status: 200 - Time: 0.0044s
+2026-03-26 10:15:25,760 - src.api.middleware - INFO - Request: GET /api/v1/recipes
+2026-03-26 10:15:25,764 - src.api.middleware - INFO - Response: GET /api/v1/recipes - Status: 200 - Time: 0.0040s
+2026-03-26 10:15:25,766 - src.api.middleware - INFO - Request: GET /api/v1/recipes
+2026-03-26 10:15:25,768 - src.api.middleware - INFO - Response: GET /api/v1/recipes - Status: 200 - Time: 0.0019s
+2026-03-26 10:15:25,770 - src.api.middleware - INFO - Request: GET /api/v1/recipes
+2026-03-26 10:15:25,775 - src.api.middleware - INFO - Response: GET /api/v1/recipes - Status: 200 - Time: 0.0044s
+2026-03-26 10:17:44,033 - src.api.middleware - INFO - Request: GET /api/v1/recipes
+2026-03-26 10:17:44,042 - src.api.middleware - INFO - Response: GET /api/v1/recipes - Status: 200 - Time: 0.0095s
+2026-03-26 10:17:44,046 - src.api.middleware - INFO - Request: GET /api/v1/recipes
+2026-03-26 10:17:44,049 - src.api.middleware - INFO - Response: GET /api/v1/recipes - Status: 200 - Time: 0.0032s
+2026-03-26 10:17:44,050 - src.api.middleware - INFO - Request: GET /api/v1/recipes
+2026-03-26 10:17:44,052 - src.api.middleware - INFO - Response: GET /api/v1/recipes - Status: 200 - Time: 0.0017s
+2026-03-26 10:17:44,053 - src.api.middleware - INFO - Request: GET /api/v1/recipes
+2026-03-26 10:17:44,056 - src.api.middleware - INFO - Response: GET /api/v1/recipes - Status: 200 - Time: 0.0026s
+2026-03-26 10:17:55,311 - src.api.middleware - INFO - Request: GET /api/v1/recipes
+2026-03-26 10:17:55,315 - src.api.middleware - INFO - Response: GET /api/v1/recipes - Status: 200 - Time: 0.0039s
+2026-03-26 10:17:55,317 - src.api.middleware - INFO - Request: GET /api/v1/recipes
+2026-03-26 10:17:55,320 - src.api.middleware - INFO - Response: GET /api/v1/recipes - Status: 200 - Time: 0.0029s
+2026-03-26 10:17:55,322 - src.api.middleware - INFO - Request: GET /api/v1/recipes
+2026-03-26 10:17:55,324 - src.api.middleware - INFO - Response: GET /api/v1/recipes - Status: 200 - Time: 0.0022s
+2026-03-26 10:17:55,325 - src.api.middleware - INFO - Request: GET /api/v1/recipes
+2026-03-26 10:17:55,328 - src.api.middleware - INFO - Response: GET /api/v1/recipes - Status: 200 - Time: 0.0024s
+2026-03-26 10:18:08,763 - src.api.middleware - INFO - Request: GET /api/v1/recipes
+2026-03-26 10:18:08,774 - src.api.middleware - INFO - Response: GET /api/v1/recipes - Status: 200 - Time: 0.0114s
+2026-03-26 10:18:08,776 - src.api.middleware - INFO - Request: GET /api/v1/recipes
+2026-03-26 10:18:08,779 - src.api.middleware - INFO - Response: GET /api/v1/recipes - Status: 200 - Time: 0.0028s
+2026-03-26 10:18:08,780 - src.api.middleware - INFO - Request: GET /api/v1/recipes
+2026-03-26 10:18:08,782 - src.api.middleware - INFO - Response: GET /api/v1/recipes - Status: 200 - Time: 0.0017s
+2026-03-26 10:18:08,783 - src.api.middleware - INFO - Request: GET /api/v1/recipes
+2026-03-26 10:18:08,786 - src.api.middleware - INFO - Response: GET /api/v1/recipes - Status: 200 - Time: 0.0028s
+2026-03-26 10:18:26,100 - src.api.middleware - INFO - Request: GET /api/v1/recipes
+2026-03-26 10:18:26,110 - src.api.middleware - INFO - Response: GET /api/v1/recipes - Status: 200 - Time: 0.0099s
+2026-03-26 10:18:26,112 - src.api.middleware - INFO - Request: GET /api/v1/recipes
+2026-03-26 10:18:26,115 - src.api.middleware - INFO - Response: GET /api/v1/recipes - Status: 200 - Time: 0.0026s
+2026-03-26 10:18:26,116 - src.api.middleware - INFO - Request: GET /api/v1/recipes
+2026-03-26 10:18:26,118 - src.api.middleware - INFO - Response: GET /api/v1/recipes - Status: 200 - Time: 0.0016s
+2026-03-26 10:18:26,119 - src.api.middleware - INFO - Request: GET /api/v1/recipes
+2026-03-26 10:18:26,121 - src.api.middleware - INFO - Response: GET /api/v1/recipes - Status: 200 - Time: 0.0019s
+2026-03-26 10:18:55,113 - src.api.main - INFO - shutting down application...
+2026-03-26 10:18:55,114 - src.api.main - INFO - database connections closed
+2026-03-26 10:18:55,114 - src.api.main - INFO - application shutdown complete
+2026-03-26 10:19:03,382 - src.api.middleware - INFO - Middleware configured successfully
+2026-03-26 10:19:03,382 - src.api.middleware - INFO - Exception handlers configured successfully
+2026-03-26 10:19:03,441 - src.api.main - INFO - starting Recipe Assistant API v1.0.0
+2026-03-26 10:19:03,441 - src.api.main - INFO - environment: development
+2026-03-26 10:19:03,441 - src.api.main - INFO - debug mode: False
+2026-03-26 10:19:03,448 - src.database.db_manager - INFO - Database schema initialized successfully
+2026-03-26 10:19:03,448 - src.database.db_manager - INFO - Database Manager initialized: data/recipe_assistant.db
+2026-03-26 10:19:03,448 - src.api.main - INFO - database initialized: {'users': 1, 'recipes': 6, 'meal_plans': 0, 'ratings': 0, 'db_size_mb': 0.2890625}
+2026-03-26 10:19:03,448 - src.database.migration_runner - INFO - Found 2 pending migration(s)
+2026-03-26 10:19:03,448 - src.database.migration_runner - INFO - Applying migration: 001_add_claude_api_key.sql
+2026-03-26 10:19:03,449 - src.database.migration_runner - ERROR - Error applying migration 001_add_claude_api_key.sql: duplicate column name: claude_api_key_encrypted
+2026-03-26 10:19:03,449 - src.database.migration_runner - ERROR - Migration failed: 001_add_claude_api_key.sql. Stopping migration process.
+2026-03-26 10:19:03,449 - src.database.migration_runner - INFO - Applied 0 migration(s)
+2026-03-26 10:19:03,449 - src.api.main - INFO - application startup complete

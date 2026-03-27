@@ -278,6 +278,35 @@ export const recipeApi = {
     return response.data.recipes || []
   },
 
+  getExternalRecipes: async (params?: {
+    query?: string
+    limit?: number
+  }): Promise<Recipe[]> => {
+    const response = await apiClient.get('/external-recipes', { params })
+    return response.data.recipes || []
+  },
+
+  getFeaturedRecipes: async (limit: number = 6): Promise<Recipe[]> => {
+    try {
+      const external = await Promise.race([
+        recipeApi.getExternalRecipes({ limit }),
+        new Promise<Recipe[]>((_, reject) =>
+          setTimeout(() => reject(new Error('external recipe timeout')), 5000)
+        ),
+      ])
+      if (external.length > 0) {
+        return external
+      }
+    } catch (error) {
+      console.warn('failed to fetch external featured recipes, falling back to local:', error)
+    }
+
+    return recipeApi.getRecipes({
+      limit,
+      min_rating: 3.5,
+    })
+  },
+
   getRecipe: async (id: number): Promise<Recipe> => {
     const response = await apiClient.get(`/recipes/${id}`)
     return response.data

@@ -201,7 +201,7 @@ async def delete_recipe(
         )
 
 
-@router.get("/recipes/external", response_model=dict)
+@router.get("/external-recipes", response_model=dict)
 async def search_external_recipes(
     query: Optional[str] = Query(None, max_length=200),
     limit: int = Query(10, ge=1, le=20),

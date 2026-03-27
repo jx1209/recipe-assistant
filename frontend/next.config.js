@@ -1,6 +1,26 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'www.themealdb.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'www.bbcgoodfood.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'www.olivemagazine.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'allrecipes.co.uk',
+      },
+    ],
+  },
   env: {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1',
   },

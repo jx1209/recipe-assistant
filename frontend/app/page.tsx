@@ -25,7 +25,7 @@ export default function HomePage() {
   const loadRecommendations = async () => {
     try {
       setIsLoading(true)
-      const data = await recipeApi.getRecipes({ limit: 6 })
+      const data = await recipeApi.getFeaturedRecipes(6)
       setRecipes(data)
     } catch (error) {
       console.error('failed to load recipes:', error)
@@ -121,7 +121,12 @@ export default function HomePage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {recipes.map((recipe) => (
-              <RecipeCard key={recipe.id} recipe={recipe} />
+              <RecipeCard
+                key={recipe.id}
+                recipe={recipe}
+                external={Boolean(recipe.external)}
+                sourceName={recipe.source_name}
+              />
             ))}
           </div>
         )}

@@ -110,7 +110,15 @@ class ExternalRecipeService:
                     })
             
             instructions_text = meal.get("strInstructions", "")
-            instructions = [s.strip() for s in instructions_text.split(".") if s.strip() and len(s.strip()) > 10]
+            instructions = [s.strip() for s in instructions_text.split(".") if s.strip() and len(s.strip()) > 20]
+            if len(instructions) < 4:
+                return None
+
+            source_url = (
+                meal.get("strSource")
+                or meal.get("strYoutube")
+                or f"https://www.themealdb.com/meal/{meal['idMeal']}"
+            )
             
             tags = []
             if meal.get("strCategory"):
@@ -126,7 +134,7 @@ class ExternalRecipeService:
                 "title": meal.get("strMeal", "Unknown Recipe"),
                 "description": instructions_text[:200] + "..." if len(instructions_text) > 200 else instructions_text,
                 "image_url": meal.get("strMealThumb"),
-                "source_url": meal.get("strSource"),
+                "source_url": source_url,
                 "source_name": "TheMealDB",
                 "ingredients": ingredients,
                 "instructions": instructions,
