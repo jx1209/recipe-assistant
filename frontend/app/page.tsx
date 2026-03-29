@@ -25,7 +25,7 @@ export default function HomePage() {
   const loadRecommendations = async () => {
     try {
       setIsLoading(true)
-      const data = await recipeApi.getFeaturedRecipes(6)
+      const data = await recipeApi.getFeaturedRecipes(12)
       setRecipes(data)
     } catch (error) {
       console.error('failed to load recipes:', error)
@@ -117,7 +117,7 @@ export default function HomePage() {
         </div>
 
         {isLoading ? (
-          <GridSkeleton count={6} />
+          <GridSkeleton count={12} />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {recipes.map((recipe) => (

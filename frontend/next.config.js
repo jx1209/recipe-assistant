@@ -19,6 +19,14 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'allrecipes.co.uk',
       },
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'upload.wikimedia.org',
+      },
     ],
   },
   env: {

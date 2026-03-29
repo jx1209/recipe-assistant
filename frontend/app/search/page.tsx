@@ -12,6 +12,24 @@ import { useRouter } from 'next/navigation'
 import { Filter, X, Plus, ChefHat, ShoppingCart, Check } from 'lucide-react'
 import toast from 'react-hot-toast'
 
+/** map UI tag chips to stored recipe_tags names */
+function tagsForApi(selected: string[]): string[] {
+  const alias: Record<string, string> = {
+    'comfort-food': 'comfort food',
+  }
+  return selected.map((t) => alias[t] ?? t)
+}
+
+function difficultyForApi(d: string): string | undefined {
+  if (!d) return undefined
+  const m: Record<string, string> = {
+    easy: 'Easy',
+    medium: 'Medium',
+    hard: 'Hard',
+  }
+  return m[d.toLowerCase()] ?? d
+}
+
 export default function SearchPage() {
   const router = useRouter()
   const [recipes, setRecipes] = useState<Recipe[]>([])
@@ -35,19 +53,16 @@ export default function SearchPage() {
   const loadRecipes = async () => {
     try {
       setIsLoading(true)
-      const params: any = {}
-      
-      if (searchQuery) params.query = searchQuery
-      if (cuisine) params.cuisine = cuisine
-      if (difficulty) params.difficulty = difficulty
-      if (mealType) params.meal_type = mealType
-      if (maxPrepTime) params.max_prep_time = parseInt(maxPrepTime)
-      if (selectedTags.length > 0) params.tags = selectedTags
-
-      const data = searchQuery 
-        ? await recipeApi.searchRecipes(searchQuery)
-        : await recipeApi.getRecipes(params)
-      
+      const apiTags = tagsForApi(selectedTags)
+      const data = await recipeApi.getRecipes({
+        query: searchQuery.trim() || undefined,
+        cuisine: cuisine || undefined,
+        difficulty: difficultyForApi(difficulty),
+        meal_type: mealType || undefined,
+        max_time: maxPrepTime ? parseInt(maxPrepTime, 10) : undefined,
+        tags: apiTags.length > 0 ? apiTags : undefined,
+        limit: 50,
+      })
       setRecipes(data)
     } catch (error) {
       console.error('failed to load recipes:', error)
@@ -107,6 +122,13 @@ export default function SearchPage() {
   const hasActiveFilters = cuisine || difficulty || mealType || maxPrepTime || selectedTags.length > 0
 
   const commonTags = ['vegetarian', 'vegan', 'gluten-free', 'dairy-free', 'quick', 'healthy', 'comfort-food']
+  const removeFilter = (kind: 'cuisine' | 'difficulty' | 'meal' | 'time' | 'tag', tag?: string) => {
+    if (kind === 'cuisine') setCuisine('')
+    if (kind === 'difficulty') setDifficulty('')
+    if (kind === 'meal') setMealType('')
+    if (kind === 'time') setMaxPrepTime('')
+    if (kind === 'tag' && tag) setSelectedTags(selectedTags.filter((t) => t !== tag))
+  }
   const cuisines = ['italian', 'mexican', 'asian', 'american', 'mediterranean', 'indian', 'french']
   const difficulties = ['easy', 'medium', 'hard']
   const mealTypes = ['breakfast', 'lunch', 'dinner', 'snack', 'dessert']
@@ -279,6 +301,64 @@ export default function SearchPage() {
               </div>
             </CardContent>
           </Card>
+        )}
+
+        {/* Active filters (chips) */}
+        {hasActiveFilters && (
+          <div className="mb-6 flex flex-wrap items-center gap-2">
+            <span className="text-sm font-semibold text-gray-600 mr-1">Active:</span>
+            {cuisine && (
+              <button
+                type="button"
+                onClick={() => removeFilter('cuisine')}
+                className="inline-flex items-center gap-1.5 rounded-full bg-primary-100 text-primary-800 px-3 py-1 text-sm font-medium hover:bg-primary-200 transition-colors"
+              >
+                Cuisine: {cuisine}
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+            {difficulty && (
+              <button
+                type="button"
+                onClick={() => removeFilter('difficulty')}
+                className="inline-flex items-center gap-1.5 rounded-full bg-primary-100 text-primary-800 px-3 py-1 text-sm font-medium hover:bg-primary-200 transition-colors"
+              >
+                Level: {difficulty}
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+            {mealType && (
+              <button
+                type="button"
+                onClick={() => removeFilter('meal')}
+                className="inline-flex items-center gap-1.5 rounded-full bg-primary-100 text-primary-800 px-3 py-1 text-sm font-medium hover:bg-primary-200 transition-colors"
+              >
+                Meal: {mealType}
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+            {maxPrepTime && (
+              <button
+                type="button"
+                onClick={() => removeFilter('time')}
+                className="inline-flex items-center gap-1.5 rounded-full bg-primary-100 text-primary-800 px-3 py-1 text-sm font-medium hover:bg-primary-200 transition-colors"
+              >
+                Max {maxPrepTime} min
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+            {selectedTags.map((tag) => (
+              <button
+                key={tag}
+                type="button"
+                onClick={() => removeFilter('tag', tag)}
+                className="inline-flex items-center gap-1.5 rounded-full bg-gray-200 text-gray-800 px-3 py-1 text-sm font-medium hover:bg-gray-300 transition-colors"
+              >
+                {tag}
+                <X className="h-3.5 w-3.5" />
+              </button>
+            ))}
+          </div>
         )}
 
         {/* Results Count & Sort */}

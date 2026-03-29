@@ -110,6 +110,8 @@ export interface Recipe {
   image_url: string | null
   prep_time: number | null
   cook_time: number | null
+  /** present on list/card responses from API */
+  total_time_minutes?: number | null
   servings: number
   difficulty: 'Easy' | 'Medium' | 'Hard' | null
   cuisine: string | null
@@ -265,16 +267,23 @@ export const authApi = {
 // recipe api
 export const recipeApi = {
   getRecipes: async (params?: {
-    search?: string
+    query?: string
     tags?: string[]
     cuisine?: string
     difficulty?: string
+    meal_type?: string
+    max_time?: number
     min_rating?: number
     limit?: number
     offset?: number
+    sort_by?: string
   }): Promise<Recipe[]> => {
-    const response = await apiClient.get('/recipes', { params })
-    // api returns { recipes: [...] }, extract the array
+    const { tags, ...rest } = params || {}
+    const q: Record<string, unknown> = { ...rest }
+    if (tags && tags.length > 0) {
+      q.tags = tags.join(',')
+    }
+    const response = await apiClient.get('/recipes', { params: q })
     return response.data.recipes || []
   },
 
@@ -286,7 +295,7 @@ export const recipeApi = {
     return response.data.recipes || []
   },
 
-  getFeaturedRecipes: async (limit: number = 6): Promise<Recipe[]> => {
+  getFeaturedRecipes: async (limit: number = 12): Promise<Recipe[]> => {
     try {
       const external = await Promise.race([
         recipeApi.getExternalRecipes({ limit }),
@@ -303,7 +312,7 @@ export const recipeApi = {
 
     return recipeApi.getRecipes({
       limit,
-      min_rating: 3.5,
+      sort_by: 'created_at',
     })
   },
 
@@ -337,10 +346,10 @@ export const recipeApi = {
   },
 
   searchRecipes: async (query: string): Promise<Recipe[]> => {
-    const response = await apiClient.get('/recipes/search', {
-      params: { q: query },
+    const response = await apiClient.get('/recipes', {
+      params: { query, limit: 50 },
     })
-    return response.data
+    return response.data.recipes || []
   },
 
   getMyRecipes: async (): Promise<Recipe[]> => {

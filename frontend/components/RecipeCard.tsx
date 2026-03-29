@@ -31,7 +31,9 @@ export function RecipeCard({
   const [isHovered, setIsHovered] = useState(false)
   const isExternalRecipe = Boolean(recipe.external && recipe.source_url)
 
-  const totalTime = (recipe.prep_time || 0) + (recipe.cook_time || 0)
+  const totalTime =
+    recipe.total_time_minutes ??
+    (recipe.prep_time || 0) + (recipe.cook_time || 0)
   const displayRating = recipe.average_rating?.toFixed(1) || null
   const cardContent = (
     <>
