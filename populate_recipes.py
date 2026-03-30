@@ -13,10 +13,14 @@ import json
 
 settings = get_settings()
 
+# Stock food photos (Unsplash — allowed for display; see next.config.js remotePatterns)
+_IMG = "https://images.unsplash.com"
+
 # Sample recipes
 sample_recipes = [
     {
         "title": "Classic Spaghetti Carbonara",
+        "image_url": f"{_IMG}/photo-1621996346565-e3dbc646d9a9?auto=format&fit=crop&w=1200&q=80",
         "description": "An authentic Italian pasta dish with eggs, cheese, pancetta, and black pepper",
         "ingredients": [
             {"name": "spaghetti", "amount": 400, "unit": "g"},
@@ -44,6 +48,7 @@ sample_recipes = [
     },
     {
         "title": "Chicken Stir-Fry",
+        "image_url": f"{_IMG}/photo-1603133872878-684f208fb84b?auto=format&fit=crop&w=1200&q=80",
         "description": "Quick and healthy chicken stir-fry with vegetables",
         "ingredients": [
             {"name": "chicken breast", "amount": 500, "unit": "g"},
@@ -74,6 +79,7 @@ sample_recipes = [
     },
     {
         "title": "Avocado Toast",
+        "image_url": f"{_IMG}/photo-1541519220094-4f3f0c26a2d4?auto=format&fit=crop&w=1200&q=80",
         "description": "Simple and delicious avocado toast with a twist",
         "ingredients": [
             {"name": "bread", "amount": 2, "unit": "slices"},
@@ -102,6 +108,7 @@ sample_recipes = [
     },
     {
         "title": "Chocolate Chip Cookies",
+        "image_url": f"{_IMG}/photo-1558961363-fa8fdf82db35?auto=format&fit=crop&w=1200&q=80",
         "description": "Classic homemade chocolate chip cookies that are crispy on the outside and chewy inside",
         "ingredients": [
             {"name": "all-purpose flour", "amount": 2.25, "unit": "cups"},
@@ -134,6 +141,7 @@ sample_recipes = [
     },
     {
         "title": "Greek Salad",
+        "image_url": f"{_IMG}/photo-1540189549336-e6e99c3679fe?auto=format&fit=crop&w=1200&q=80",
         "description": "Fresh and vibrant Mediterranean salad",
         "ingredients": [
             {"name": "cucumber", "amount": 1, "unit": "whole"},
@@ -165,36 +173,61 @@ sample_recipes = [
         "tags": ["salad", "vegetarian", "healthy", "mediterranean", "quick"]
     },
     {
-        "title": "Beef Tacos",
-        "description": "Flavorful beef tacos with fresh toppings",
+        "title": "Birria Tacos (From Scratch)",
+        "source_url": "https://tastesbetterfromscratch.com/birria-tacos/",
+        "source_name": "Tastes Better From Scratch",
+        "image_url": (
+            "https://upload.wikimedia.org/wikipedia/commons/thumb/d/de/Birria_tacos.jpg/"
+            "1280px-Birria_tacos.jpg"
+        ),
+        "description": "Shredded beef and melty cheese in crispy, sauce-dipped quesabirria tacos with consommé for dipping. "
+        "Corn tortillas are store-bought—no homemade tortillas. Based on the recipe by Lauren Allen at Tastes Better From Scratch. "
+        "Hero photo: birria tacos (Teddy's Red Tacos, Venice, CA) — T.Tseng, CC BY 2.0 via Wikimedia Commons.",
         "ingredients": [
-            {"name": "ground beef", "amount": 500, "unit": "g"},
-            {"name": "taco seasoning", "amount": 2, "unit": "tbsp"},
-            {"name": "taco shells", "amount": 8, "unit": "whole"},
-            {"name": "lettuce", "amount": 1, "unit": "cup"},
-            {"name": "tomatoes", "amount": 2, "unit": "whole"},
-            {"name": "cheddar cheese", "amount": 1, "unit": "cup"},
-            {"name": "sour cream", "amount": 0.5, "unit": "cup"},
-            {"name": "salsa", "amount": 0.5, "unit": "cup"}
+            {"name": "beef chuck roast (fat trimmed)", "quantity": 3, "unit": "lb"},
+            {"name": "bone-in beef short ribs", "quantity": 4, "unit": "whole"},
+            {"name": "dried guajillo chiles", "quantity": 8, "unit": "whole"},
+            {"name": "dried pasilla chiles", "quantity": 3, "unit": "whole"},
+            {"name": "dried arbol chiles (adjust for heat)", "quantity": 2, "unit": "whole"},
+            {"name": "Roma tomatoes, quartered", "quantity": 5, "unit": "whole"},
+            {"name": "white onion, roughly chopped", "quantity": 1, "unit": "large"},
+            {"name": "garlic cloves (about 1 head)", "quantity": 12, "unit": "cloves"},
+            {"name": "whole black peppercorns", "quantity": 1, "unit": "tbsp"},
+            {"name": "whole cumin seeds", "quantity": 1, "unit": "tbsp"},
+            {"name": "dried Mexican oregano", "quantity": 1, "unit": "tbsp"},
+            {"name": "dried thyme", "quantity": 1, "unit": "tbsp"},
+            {"name": "whole coriander seed", "quantity": 0.5, "unit": "tsp"},
+            {"name": "whole cloves", "quantity": 4, "unit": "whole"},
+            {"name": "fresh ginger, minced", "quantity": 1, "unit": "tsp"},
+            {"name": "Mexican cinnamon stick (or pinch ground cinnamon)", "quantity": 1, "unit": "inch piece"},
+            {"name": "apple cider vinegar", "quantity": 2, "unit": "tbsp"},
+            {"name": "bay leaves", "quantity": 3, "unit": "whole"},
+            {"name": "kosher salt (for sauce)", "quantity": 1, "unit": "tbsp"},
+            {"name": "water (for simmering and rinsing blender)", "quantity": 8, "unit": "cups"},
+            {"name": "store-bought corn tortillas (white or yellow)", "quantity": 15, "unit": "whole"},
+            {"name": "shredded Oaxaca cheese (or mozzarella / Monterey Jack)", "quantity": 2.5, "unit": "cups"},
+            {"name": "white onion, diced (for tacos)", "quantity": 0.5, "unit": "whole"},
+            {"name": "fresh cilantro, chopped", "quantity": 1, "unit": "bunch"},
+            {"name": "limes, cut into wedges", "quantity": 2, "unit": "whole"},
         ],
         "instructions": [
-            "Brown ground beef in large skillet over medium heat",
-            "Drain excess fat",
-            "Add taco seasoning and water according to package",
-            "Simmer for 5 minutes",
-            "Warm taco shells in oven",
-            "Shred lettuce and dice tomatoes",
-            "Fill shells with seasoned beef",
-            "Top with lettuce, tomatoes, cheese, sour cream, and salsa",
-            "Serve immediately"
+            "Trim excess fat from the chuck roast and cut into a few large pieces; season lightly with salt.",
+            "Rinse dried chiles. Wearing gloves, cut open and remove stems and seeds. For extra heat, leave arbol chiles whole; for milder tacos, seed them or remove some arbol.",
+            "Birria base: In a large stockpot (at least 5.5 qt), cook tomatoes and chopped onion over medium heat for a few minutes, stirring. Add whole garlic cloves, all prepared chiles, and the dry spices (peppercorns, cumin, oregano, thyme, coriander, cloves, ginger, cinnamon) except the bay leaves. Cook about 5 minutes, stirring often.",
+            "Add vinegar and 4 cups water. Bring to a low boil, reduce heat, and simmer uncovered for 15 minutes.",
+            "Blend the mixture until as smooth as possible. Pour through a fine-mesh strainer back into the pot. Add 4 cups water to the blender, swirl to rinse remaining sauce from the sides, and pour into the pot (this rinses the blender into the broth).",
+            "Stir in 1 tablespoon kosher salt. Bring to a boil. Add short ribs, chuck pieces, and bay leaves. Cover, reduce to a simmer, and cook about 2½ hours until the beef is tender.",
+            "Remove meat to a plate. Shred beef; discard bones and soft bay leaves. Keep the consommé warm for dipping.",
+            "Assemble tacos: Heat a large griddle or skillet over medium heat with a thin film of oil. Dip a corn tortilla in the birria sauce, lay it on the hot surface, then quickly add shredded meat, cheese, diced onion, and cilantro. Fold the tortilla in half and cook until crispy and browned on both sides.",
+            "Serve quesabirria tacos with extra onion and cilantro, lime wedges, and small cups of warm consommé for dipping.",
         ],
-        "prep_time": 10,
-        "cook_time": 15,
-        "servings": 4,
-        "difficulty": "Easy",
+        "prep_time": 20,
+        "cook_time": 170,
+        "servings": 16,
+        "difficulty": "Hard",
         "cuisine": "mexican",
         "meal_type": "dinner",
-        "tags": ["mexican", "quick", "comfort-food", "beef"]
+        "tags": ["mexican", "birria", "beef", "slow-cooked", "weekend-project"],
     }
 ]
 
@@ -232,19 +265,26 @@ def main():
     
     # Insert recipes
     for recipe in sample_recipes:
+        total_time = recipe['prep_time'] + recipe['cook_time']
         cursor.execute("""
             INSERT INTO recipes (
-                created_by, title, description, ingredients_json, instructions_json,
-                prep_time_minutes, cook_time_minutes, servings, difficulty, cuisine
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                created_by, title, description, source_url, source_name,
+                ingredients_json, instructions_json,
+                image_url, prep_time_minutes, cook_time_minutes, total_time_minutes,
+                servings, difficulty, cuisine
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             user_id,
             recipe['title'],
             recipe['description'],
+            recipe.get('source_url'),
+            recipe.get('source_name'),
             json.dumps(recipe['ingredients']),
             json.dumps(recipe['instructions']),
+            recipe.get('image_url'),
             recipe['prep_time'],
             recipe['cook_time'],
+            total_time,
             recipe['servings'],
             recipe['difficulty'],
             recipe['cuisine']

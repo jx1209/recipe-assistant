@@ -456,6 +456,16 @@ class RecipeManager:
             if search_params.difficulty:
                 where_clauses.append("difficulty = ?")
                 params.append(search_params.difficulty.value)
+
+            #meal type (stored as a recipe_tags tag, e.g. breakfast, lunch, dinner)
+            if search_params.meal_type:
+                where_clauses.append("""
+                    id IN (
+                        SELECT recipe_id FROM recipe_tags
+                        WHERE LOWER(tag_name) = LOWER(?)
+                    )
+                """)
+                params.append(search_params.meal_type)
             
             #time filter
             if search_params.max_time:
@@ -530,6 +540,17 @@ class RecipeManager:
             params.extend([search_params.limit, search_params.offset])
             cursor.execute(query, params)
             rows = cursor.fetchall()
+
+            recipe_ids = [row['id'] for row in rows]
+            tags_by_id: Dict[int, List[str]] = {rid: [] for rid in recipe_ids}
+            if recipe_ids:
+                placeholders = ','.join(['?' for _ in recipe_ids])
+                cursor.execute(
+                    f"SELECT recipe_id, tag_name FROM recipe_tags WHERE recipe_id IN ({placeholders})",
+                    recipe_ids,
+                )
+                for r in cursor.fetchall():
+                    tags_by_id.setdefault(r['recipe_id'], []).append(r['tag_name'])
             
             #build recipe summaries
             recipes = []
@@ -554,7 +575,8 @@ class RecipeManager:
                     servings=row['servings'],
                     average_rating=round(row['avg_rating'], 2) if row['avg_rating'] else None,
                     rating_count=row['rating_count'],
-                    is_favorite=is_favorite
+                    is_favorite=is_favorite,
+                    tags=tags_by_id.get(row['id'], []),
                 )
                 recipes.append(recipe)
             
@@ -629,6 +651,17 @@ class RecipeManager:
                 LIMIT ? OFFSET ?
             """, (user_id, limit, offset))
             rows = cursor.fetchall()
+
+            recipe_ids = [row['id'] for row in rows]
+            tags_by_id: Dict[int, List[str]] = {rid: [] for rid in recipe_ids}
+            if recipe_ids:
+                placeholders = ','.join(['?' for _ in recipe_ids])
+                cursor.execute(
+                    f"SELECT recipe_id, tag_name FROM recipe_tags WHERE recipe_id IN ({placeholders})",
+                    recipe_ids,
+                )
+                for r in cursor.fetchall():
+                    tags_by_id.setdefault(r['recipe_id'], []).append(r['tag_name'])
             
             recipes = []
             for row in rows:
@@ -643,7 +676,8 @@ class RecipeManager:
                     servings=row['servings'],
                     average_rating=round(row['avg_rating'], 2) if row['avg_rating'] else None,
                     rating_count=row['rating_count'],
-                    is_favorite=True
+                    is_favorite=True,
+                    tags=tags_by_id.get(row['id'], []),
                 )
                 recipes.append(recipe)
             

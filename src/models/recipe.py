@@ -154,6 +154,7 @@ class RecipeSearch(BaseModel):
     cuisine: Optional[str] = Field(None, max_length=50)
     difficulty: Optional[DifficultyLevel] = None
     max_time: Optional[int] = Field(None, ge=0, le=1440)
+    meal_type: Optional[str] = Field(None, max_length=50)
     tags: Optional[List[str]] = None
     ingredients: Optional[List[str]] = None  #search by ingredients
     exclude_ingredients: Optional[List[str]] = None
@@ -166,6 +167,13 @@ class RecipeSearch(BaseModel):
     @classmethod
     def lowercase_lists(cls, v):
         return [item.lower().strip() for item in v if item.strip()] if v else []
+
+    @field_validator('meal_type')
+    @classmethod
+    def lowercase_meal_type(cls, v):
+        if not v or not str(v).strip():
+            return None
+        return str(v).lower().strip()
 
 
 class RecipeImportUrl(BaseModel):
@@ -192,6 +200,7 @@ class RecipeSummary(BaseModel):
     average_rating: Optional[float]
     rating_count: int
     is_favorite: bool = False
+    tags: List[str] = Field(default_factory=list)
     
     model_config = {"from_attributes": True}
 
