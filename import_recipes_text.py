@@ -31,6 +31,7 @@ Multiple recipes:
 Run:
   ./venv/bin/python import_recipes_text.py --file data/recipes_from_notes.txt
   ./venv/bin/python import_recipes_text.py --file data/recipes_from_notes.txt --dry-run
+  ./venv/bin/python import_recipes_text.py --dir data/notes_batch --dry-run
 """
 
 from __future__ import annotations
@@ -168,8 +169,48 @@ def _normalize_difficulty(value: str | None) -> str:
 
 
 def _split_blocks(text: str) -> list[str]:
+    # explicit delimiter wins
     parts = re.split(r"(?m)^\s*===\s*$", text)
-    return [p.strip() for p in parts if p.strip()]
+    cleaned = [p.strip() for p in parts if p.strip()]
+    if len(cleaned) > 1:
+        return cleaned
+
+    # heuristic split: two+ blank lines before a likely title line
+    lines = text.splitlines()
+    if not lines:
+        return []
+    start_indices = [0]
+    for i in range(1, len(lines)):
+        prev = lines[i - 1].strip()
+        cur = lines[i].strip()
+        next_line = lines[i + 1].strip() if (i + 1) < len(lines) else ""
+        if not cur:
+            continue
+        looks_like_title = (
+            ":" not in cur
+            and len(cur.split()) <= 9
+            and cur[:1].isalpha()
+            and next_line
+            and "ingredient" not in cur.lower()
+            and "instruction" not in cur.lower()
+            and "method" not in cur.lower()
+        )
+        if looks_like_title and not prev:
+            # if two blank lines before, stronger signal for new recipe
+            prev2_blank = i - 2 >= 0 and not lines[i - 2].strip()
+            if prev2_blank:
+                start_indices.append(i)
+
+    if len(start_indices) == 1:
+        return cleaned
+
+    blocks: list[str] = []
+    for pos, start in enumerate(start_indices):
+        end = start_indices[pos + 1] if (pos + 1) < len(start_indices) else len(lines)
+        block = "\n".join(lines[start:end]).strip()
+        if block:
+            blocks.append(block)
+    return blocks or cleaned
 
 
 def parse_recipe_block(block: str, idx: int) -> dict[str, Any]:
@@ -328,18 +369,33 @@ def parse_text_file(path: Path) -> list[dict[str, Any]]:
     return [parse_recipe_block(block, i) for i, block in enumerate(blocks)]
 
 
+def parse_text_dir(path: Path) -> list[dict[str, Any]]:
+    recipes: list[dict[str, Any]] = []
+    for p in sorted(path.glob("*.txt")):
+        recipes.extend(parse_text_file(p))
+    return recipes
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description="Import recipes from plain text")
-    ap.add_argument("--file", type=Path, required=True, help="Path to text file")
+    group = ap.add_mutually_exclusive_group(required=True)
+    group.add_argument("--file", type=Path, help="Path to text file")
+    group.add_argument("--dir", type=Path, help="Directory of *.txt files")
     ap.add_argument("--dry-run", action="store_true", help="Validate without writing DB")
     args = ap.parse_args()
 
-    if not args.file.is_file():
-        print(f"Not a file: {args.file}", file=sys.stderr)
-        sys.exit(1)
-
     try:
-        recipes = parse_text_file(args.file)
+        if args.file:
+            if not args.file.is_file():
+                print(f"Not a file: {args.file}", file=sys.stderr)
+                sys.exit(1)
+            recipes = parse_text_file(args.file)
+        else:
+            assert args.dir is not None
+            if not args.dir.is_dir():
+                print(f"Not a directory: {args.dir}", file=sys.stderr)
+                sys.exit(1)
+            recipes = parse_text_dir(args.dir)
     except ValueError as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
